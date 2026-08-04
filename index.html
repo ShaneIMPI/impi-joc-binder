@@ -406,6 +406,7 @@
     if (!documents.length) {
       statusMsg.textContent = 'Add at least one PDF document before generating the binder.';
       statusMsg.className = 'status-msg error';
+      statusMsg.style.display = 'block';
       return;
     }
 
@@ -449,10 +450,12 @@
 
       statusMsg.textContent = `Binder generated successfully — ${result.totalPages} pages, ${documents.length} sections. Check your downloads folder.`;
       statusMsg.className = 'status-msg success';
+      statusMsg.style.display = 'block';
     } catch (err) {
       console.error(err);
       statusMsg.textContent = 'Something went wrong generating the binder: ' + err.message;
       statusMsg.className = 'status-msg error';
+      statusMsg.style.display = 'block';
     } finally {
       generateBtn.disabled = false;
       setTimeout(() => { progressWrap.style.display = 'none'; progressFill.style.width = '0%'; }, 1500);
