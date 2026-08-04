@@ -281,6 +281,7 @@
 
     // ---------------- Draw TOC content ----------------
     const tocHeaderH = 90;
+    const tocTopPad = 22; // breathing room between the header bar and the first row
     const rowH = 20;
     for (const tp of tocPages) {
       tp.drawRectangle({ x: 0, y: PAGE_H - tocHeaderH, width: PAGE_W, height: tocHeaderH, color: BAR_GREY });
@@ -314,7 +315,7 @@
       const pageIdx = Math.floor(rowIndex / rowsPerPage);
       const rowInPage = rowIndex % rowsPerPage;
       const tp = tocPages[pageIdx];
-      const rowTop = PAGE_H - tocHeaderH - rowInPage * rowH;
+      const rowTop = PAGE_H - tocHeaderH - tocTopPad - rowInPage * rowH;
       const rowY = rowTop - rowH;
 
       if (rowInPage % 2 === 0) {
