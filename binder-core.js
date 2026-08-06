@@ -130,8 +130,15 @@
     return groups;
   }
 
+  function fitTitleSize(text, font, maxWidth, startSize, minSize) {
+    let size = startSize;
+    while (size > minSize && font.widthOfTextAtSize(text, size) > maxWidth) size -= 1;
+    return size;
+  }
+
   async function generateBinder(opts) {
     const {
+      submissionType = 'joc', // 'joc' | 'outstanding'
       eventName = 'Untitled Event',
       clientName = '',
       venue = '',
@@ -142,7 +149,19 @@
       clientLogoBytes = null,
       documents = [], // [{ bytes, sectionNumber, title }]
       onProgress = () => {},
+      // Outstanding-submission-only fields (all optional, all ignored in 'joc' mode)
+      jocReference = '',
+      addressedTo = '',
+      requestedDate = '',
+      submissionDate = '',
+      signatoryName = 'Shane Steynfaardt',
+      signatoryTitle = 'Senior Operations Manager',
+      outstandingItems = [], // [{ itemText, sectionRef }]
     } = opts;
+
+    const isOutstanding = submissionType === 'outstanding';
+    const todayStr = new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
+    const effectiveSubmissionDate = submissionDate || todayStr;
 
     if (!impiLogoBytes) throw new Error('IMPI logo bytes are required.');
     if (!documents.length) throw new Error('At least one document is required.');
@@ -153,6 +172,11 @@
 
     const impiLogo = await embedImageAuto(outDoc, impiLogoBytes);
     const clientLogo = clientLogoBytes ? await embedImageAuto(outDoc, clientLogoBytes) : null;
+
+    // Group documents into sections up front (e.g. 2a/2b/2c collapse into one
+    // "Section 2") so the cover page's section count reflects reality, not just
+    // the number of files uploaded.
+    const groups = groupDocuments(documents);
 
     // ---------------- Cover page ----------------
     const cover = outDoc.addPage([PAGE_W, PAGE_H]);
@@ -191,8 +215,8 @@
     let cy = PAGE_H - MARGIN - logoBoxH - 30;
     cover.drawRectangle({ x: 0, y: cy, width: PAGE_W, height: 8, color: RED });
     cy -= 55;
-    const title = 'JOC PRESENTATION FILE';
-    const titleSize = 26;
+    const title = isOutstanding ? 'OUTSTANDING DOCUMENTATION SUBMISSION' : 'JOC PRESENTATION FILE';
+    const titleSize = fitTitleSize(title, helvB, PAGE_W - 2 * MARGIN - 20, 26, 15);
     const titleW = helvB.widthOfTextAtSize(title, titleSize);
     cover.drawText(title, { x: (PAGE_W - titleW) / 2, y: cy, size: titleSize, font: helvB, color: DARK });
 
@@ -205,26 +229,35 @@
     cover.drawLine({ start: { x: MARGIN, y: cy }, end: { x: PAGE_W - MARGIN, y: cy }, thickness: 2, color: GOLD });
     cy -= 28;
 
-    const infoRows = [
-      ['CLIENT', clientName],
-      ['VENUE', venue],
-      ['EVENT DATE', eventDate],
-    ];
+    const infoRows = isOutstanding
+      ? [
+          ['CLIENT', clientName],
+          ['VENUE', venue],
+          ['EVENT DATE', eventDate],
+          ['JOC REFERENCE', jocReference || 'N/A'],
+          ['ITEMS REQUESTED ON', requestedDate || 'N/A'],
+          ['SUBMISSION DATE', effectiveSubmissionDate],
+        ]
+      : [
+          ['CLIENT', clientName],
+          ['VENUE', venue],
+          ['EVENT DATE', eventDate],
+        ];
     for (const [label, value] of infoRows) {
       cover.drawText(label, { x: MARGIN, y: cy, size: 10, font: helvB, color: DARK });
-      cover.drawText(value || 'N/A', { x: MARGIN + 110, y: cy, size: 11, font: helv, color: DARK });
+      cover.drawText(value || 'N/A', { x: MARGIN + 140, y: cy, size: 11, font: helv, color: DARK });
       cy -= 22;
     }
 
     // Document control block near bottom
-    const dcY = 170;
+    const dcY = isOutstanding ? 130 : 170;
     cover.drawLine({ start: { x: MARGIN, y: dcY + 20 }, end: { x: PAGE_W - MARGIN, y: dcY + 20 }, thickness: 1, color: GOLD });
     cover.drawText('DOCUMENT CONTROL', { x: MARGIN, y: dcY, size: 11, font: helvB, color: DARK });
     const dcRows = [
       ['Prepared by', preparedBy],
       ['Version', docVersion],
-      ['Date generated', new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' })],
-      ['Total sections', String(documents.length)],
+      ['Date generated', todayStr],
+      [isOutstanding ? 'Documents submitted' : 'Total sections', isOutstanding ? String(documents.length) : String(groups.length)],
     ];
     let dcy2 = dcY - 20;
     for (const [label, value] of dcRows) {
@@ -233,8 +266,118 @@
       dcy2 -= 15;
     }
 
+    // ---------------- Outstanding-submission-only: transmittal letter ----------------
+    let letterPage = null;
+    if (isOutstanding) {
+      letterPage = outDoc.addPage([PAGE_W, PAGE_H]);
+      const lp = letterPage;
+      const smallLogoDim = scaleToFit(impiLogo, 90, 40);
+      lp.drawImage(impiLogo, { x: MARGIN, y: PAGE_H - MARGIN - smallLogoDim.height, width: smallLogoDim.width, height: smallLogoDim.height });
+      const dateW = helv.widthOfTextAtSize(effectiveSubmissionDate, 10);
+      lp.drawText(effectiveSubmissionDate, { x: PAGE_W - MARGIN - dateW, y: PAGE_H - MARGIN - 15, size: 10, font: helv, color: DARK });
+
+      let ly = PAGE_H - MARGIN - smallLogoDim.height - 40;
+      const bodyWidth = PAGE_W - 2 * MARGIN;
+
+      if (addressedTo.trim()) {
+        const addrLines = addressedTo.split('\n').map((l) => l.trim()).filter(Boolean);
+        for (const line of addrLines) {
+          lp.drawText(line, { x: MARGIN, y: ly, size: 10, font: helv, color: DARK });
+          ly -= 14;
+        }
+        ly -= 20;
+      }
+
+      lp.drawText('Dear Sir / Madam,', { x: MARGIN, y: ly, size: 10.5, font: helv, color: DARK });
+      ly -= 28;
+
+      const refSuffix = jocReference ? ` (JOC REF: ${jocReference.toUpperCase()})` : '';
+      const reLine = `RE: SUBMISSION OF OUTSTANDING DOCUMENTATION – ${eventName.toUpperCase()}${refSuffix}`;
+      for (const line of wrapText(reLine, helvB, 11, bodyWidth)) {
+        lp.drawText(line, { x: MARGIN, y: ly, size: 11, font: helvB, color: DARK });
+        ly -= 16;
+      }
+      ly -= 14;
+
+      const para1 = requestedDate
+        ? `Further to your correspondence dated ${requestedDate}, we hereby submit the outstanding documentation requested in respect of the above-mentioned event.`
+        : `Further to your correspondence regarding the above-mentioned event, we hereby submit the outstanding documentation requested.`;
+      const para2 = `The enclosed documents, listed in the accompanying Schedule of Outstanding Items, are submitted in satisfaction of the outstanding requirements raised. Should any further information or clarification be required, please do not hesitate to contact the undersigned.`;
+      const para3 = `We trust that this submission finds the outstanding matters in order, and respectfully request that the event be considered fully compliant for approval.`;
+
+      for (const para of [para1, para2, para3]) {
+        for (const line of wrapText(para, helv, 10.5, bodyWidth)) {
+          lp.drawText(line, { x: MARGIN, y: ly, size: 10.5, font: helv, color: DARK });
+          ly -= 15;
+        }
+        ly -= 13;
+      }
+
+      ly -= 6;
+      lp.drawText('Yours faithfully,', { x: MARGIN, y: ly, size: 10.5, font: helv, color: DARK });
+      ly -= 50;
+      lp.drawLine({ start: { x: MARGIN, y: ly + 12 }, end: { x: MARGIN + 180, y: ly + 12 }, thickness: 0.75, color: GREY });
+      lp.drawText(signatoryName, { x: MARGIN, y: ly, size: 10.5, font: helvB, color: DARK });
+      ly -= 14;
+      lp.drawText(signatoryTitle, { x: MARGIN, y: ly, size: 9.5, font: helv, color: GREY });
+      ly -= 14;
+      lp.drawText('IMPI RMS (Pty) Ltd', { x: MARGIN, y: ly, size: 9.5, font: helv, color: GREY });
+    }
+
+    // ---------------- Outstanding-submission-only: Schedule of Outstanding Items ----------------
+    // Precompute the row layout (wrapped line counts, row heights, page breaks) BEFORE
+    // creating pages, since none of that depends on final page numbers — only the
+    // "Page" column (filled in later) needs pageNumberOf.
+    const schedHeaderH = 90, schedTopPad = 22, schedLineH = 13, schedRowPad = 10;
+    const colNumW = 22, colGap = 10;
+    const colItemW = 215, colDocW = 140, colRefW = 40, colPageW = 46;
+    const colNumX = MARGIN;
+    const colItemX = colNumX + colNumW + colGap;
+    const colDocX = colItemX + colItemW + colGap;
+    const colRefX = colDocX + colDocW + colGap;
+    const colPageX = colRefX + colRefW + colGap;
+
+    function findMatchedDoc(sectionRef) {
+      if (!sectionRef || !sectionRef.trim()) return null;
+      const needle = sectionRef.trim().toLowerCase();
+      return documents.find((d) => String(d.sectionNumber || '').trim().toLowerCase() === needle) || null;
+    }
+
+    const schedRowsLayout = [];
+    if (isOutstanding && outstandingItems.length) {
+      outstandingItems.forEach((oi, idx) => {
+        const matched = findMatchedDoc(oi.sectionRef);
+        const itemLines = wrapText(oi.itemText || '(untitled item)', helv, 10, colItemW);
+        const docLabel = matched ? matched.title : (oi.sectionRef && oi.sectionRef.trim() ? `Not found: "${oi.sectionRef}"` : '—');
+        const docLines = wrapText(docLabel, helv, 10, colDocW);
+        const lineCount = Math.max(itemLines.length, docLines.length, 1);
+        const rowHeight = lineCount * schedLineH + schedRowPad;
+        schedRowsLayout.push({ idx: idx + 1, itemLines, docLines, ref: oi.sectionRef || '—', matched, rowHeight });
+      });
+    }
+
+    // Paginate the precomputed rows
+    const schedPagesRowGroups = [];
+    if (schedRowsLayout.length) {
+      let current = [];
+      let usedH = 0;
+      const usableH = PAGE_H - schedHeaderH - schedTopPad - 70; // leave room for footer
+      for (const row of schedRowsLayout) {
+        if (current.length && usedH + row.rowHeight > usableH) {
+          schedPagesRowGroups.push(current);
+          current = [];
+          usedH = 0;
+        }
+        current.push(row);
+        usedH += row.rowHeight;
+      }
+      if (current.length) schedPagesRowGroups.push(current);
+    }
+
+    const schedulePages = schedPagesRowGroups.map(() => outDoc.addPage([PAGE_W, PAGE_H]));
+
     // ---------------- Group documents into sections ----------------
-    const groups = groupDocuments(documents);
+    // (already computed above, before the cover page, so the section count is accurate there)
     // Row count used to size the TOC: grouped sections get 1 header row +
     // 1 row per sub-document; single-document sections get 1 row, same as before.
     const tocRowCount = groups.reduce((sum, g) => sum + (g.items.length > 1 ? 1 + g.items.length : 1), 0);
@@ -273,11 +416,60 @@
       });
     }
 
+    // Map each raw docSpec (from the `documents` array, by reference) to the page
+    // its content starts on — used by the Schedule of Outstanding Items to resolve
+    // "Document Provided" / "Page" columns without any fragile re-matching by text.
+    const docRefToPage = new Map();
+    groups.forEach((group, gi) => {
+      group.items.forEach((docSpec, di) => {
+        docRefToPage.set(docSpec, sectionPlan[gi].items[di].firstContentPage);
+      });
+    });
+
     // Build a page -> number map now that every page exists
     const allPages = outDoc.getPages();
     const pageNumberOf = new Map();
     allPages.forEach((p, idx) => pageNumberOf.set(p, idx + 1));
     const totalPages = allPages.length;
+
+    // ---------------- Draw Schedule of Outstanding Items content ----------------
+    // (deferred until now because the "Page" column needs pageNumberOf, which only
+    // exists once every content page has been embedded)
+    schedPagesRowGroups.forEach((rowsOnPage, pageIdx) => {
+      const sp = schedulePages[pageIdx];
+      sp.drawRectangle({ x: 0, y: PAGE_H - schedHeaderH, width: PAGE_W, height: schedHeaderH, color: BAR_GREY });
+      sp.drawRectangle({ x: 0, y: PAGE_H - schedHeaderH - 4, width: PAGE_W, height: 4, color: RED });
+      const schedLogoDim = scaleToFit(impiLogo, 90, 40);
+      sp.drawImage(impiLogo, { x: MARGIN, y: PAGE_H - schedHeaderH + (schedHeaderH - schedLogoDim.height) / 2 - 5, width: schedLogoDim.width, height: schedLogoDim.height });
+      const schedHeading = 'SCHEDULE OF OUTSTANDING ITEMS';
+      sp.drawText(schedHeading, { x: PAGE_W - MARGIN - helvB.widthOfTextAtSize(schedHeading, 14), y: PAGE_H - schedHeaderH / 2 - 6, size: 14, font: helvB, color: DARK });
+
+      let ly = PAGE_H - schedHeaderH - schedTopPad;
+      // column headers
+      sp.drawText('#', { x: colNumX, y: ly, size: 9, font: helvB, color: GREY });
+      sp.drawText('ITEM REQUESTED', { x: colItemX, y: ly, size: 9, font: helvB, color: GREY });
+      sp.drawText('DOCUMENT PROVIDED', { x: colDocX, y: ly, size: 9, font: helvB, color: GREY });
+      sp.drawText('REF', { x: colRefX, y: ly, size: 9, font: helvB, color: GREY });
+      sp.drawText('PAGE', { x: colPageX, y: ly, size: 9, font: helvB, color: GREY });
+      ly -= 16;
+      sp.drawLine({ start: { x: MARGIN, y: ly + 4 }, end: { x: PAGE_W - MARGIN, y: ly + 4 }, thickness: 1, color: GOLD });
+      ly -= 4;
+
+      rowsOnPage.forEach((row, i) => {
+        const rowTop = ly;
+        if (i % 2 === 0) {
+          sp.drawRectangle({ x: MARGIN, y: rowTop - row.rowHeight, width: PAGE_W - 2 * MARGIN, height: row.rowHeight, color: LIGHT_GREY });
+        }
+        let textY = rowTop - schedLineH + 2;
+        sp.drawText(String(row.idx), { x: colNumX, y: textY, size: 10, font: helvB, color: RED });
+        row.itemLines.forEach((line, li) => sp.drawText(line, { x: colItemX, y: textY - li * schedLineH, size: 10, font: helv, color: DARK }));
+        row.docLines.forEach((line, li) => sp.drawText(line, { x: colDocX, y: textY - li * schedLineH, size: 10, font: helv, color: DARK }));
+        sp.drawText(row.ref, { x: colRefX, y: textY, size: 10, font: helv, color: GREY });
+        const pageNumStr = row.matched ? String(pageNumberOf.get(docRefToPage.get(row.matched)) || '—') : '—';
+        sp.drawText(pageNumStr, { x: colPageX, y: textY, size: 10, font: helv, color: GREY });
+        ly -= row.rowHeight;
+      });
+    });
 
     // ---------------- Draw TOC content ----------------
     const tocHeaderH = 90;
@@ -415,8 +607,10 @@
       const isCover = idx === 0;
       const isDivider = sectionPlan.some((s) => s.dividerPage === page);
       const isToc = tocPages.includes(page);
+      const isLetter = letterPage === page;
+      const isSchedule = schedulePages.includes(page);
 
-      if (isCover || isDivider || isToc) {
+      if (isCover || isDivider || isToc || isLetter || isSchedule) {
         page.drawLine({ start: { x: MARGIN, y: 40 }, end: { x: PAGE_W - MARGIN, y: 40 }, thickness: 1, color: GOLD });
         page.drawText(complianceLine, { x: MARGIN, y: 28, size: 6.5, font: helv, color: GREY });
         const evLabel = eventName;
@@ -442,6 +636,22 @@
     try {
       const context = outDoc.context;
       const topRefs = [];
+
+      if (isOutstanding && letterPage) {
+        const letterDict = context.obj({
+          Title: PDFLib.PDFString.of('Transmittal Letter'),
+          Dest: [letterPage.ref, PDFName.of('XYZ'), null, null, null],
+        });
+        topRefs.push(context.register(letterDict));
+      }
+      if (isOutstanding && schedulePages.length) {
+        const schedDict = context.obj({
+          Title: PDFLib.PDFString.of('Schedule of Outstanding Items'),
+          Dest: [schedulePages[0].ref, PDFName.of('XYZ'), null, null, null],
+        });
+        topRefs.push(context.register(schedDict));
+      }
+
       for (const sec of sectionPlan) {
         if (sec.items.length > 1) {
           const parentDict = context.obj({
