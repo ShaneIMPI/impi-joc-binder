@@ -1,20 +1,691 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#231F20" />
-    <title>IMPI Digital Business Card</title>
-    <meta name="description" content="IMPI Protection Agency — digital business card" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMPI JOC Binder Assembler</title>
+<style>
+  :root {
+    --red: #DE1819;
+    --red-dark: #B01415;
+    --gold: #FDDB07;
+    --dark: #231F20;
+    --grey-bg: #F4F4F5;
+    --border: #E0E0E2;
+    --text-muted: #6B6B6E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+    background: var(--grey-bg);
+    color: var(--dark);
+  }
+  header {
+    background: var(--dark);
+    border-bottom: 4px solid var(--red);
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  header img { height: 46px; }
+  header h1 {
+    font-size: 19px;
+    color: #fff;
+    margin: 0;
+    font-weight: 600;
+  }
+  header p {
+    margin: 2px 0 0;
+    color: #c9c9c9;
+    font-size: 12.5px;
+  }
+  main {
+    max-width: 880px;
+    margin: 28px auto 80px;
+    padding: 0 20px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 22px;
+    overflow: hidden;
+  }
+  .card-header {
+    background: #fff;
+    border-bottom: 2px solid var(--red);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .step-num {
+    background: var(--red);
+    color: #fff;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .card-header h2 { font-size: 15px; margin: 0; }
+  .card-body { padding: 20px; }
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.02em; }
+  input[type=text], input[type=date] {
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  input:focus { outline: 2px solid var(--gold); border-color: var(--red); }
+
+  .logo-upload {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+  }
+  .logo-upload img { max-height: 50px; max-width: 120px; }
+  .logo-upload .placeholder { font-size: 12px; color: var(--text-muted); }
+  .btn-small {
+    font-size: 12.5px;
+    padding: 6px 12px;
+    border: 1px solid var(--dark);
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .btn-small:hover { background: var(--grey-bg); }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 6px;
+    padding: 28px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .drop-zone.drag-over { border-color: var(--red); background: #fff5f5; }
+  .drop-zone strong { color: var(--dark); }
+  .drop-zone input { display: none; }
+
+  #docList { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .doc-row {
+    display: grid;
+    grid-template-columns: auto 70px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--grey-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+  }
+  .doc-row .order-controls { display: flex; flex-direction: column; gap: 2px; }
+  .doc-row .order-controls button {
+    width: 22px; height: 18px; font-size: 10px; cursor: pointer;
+    border: 1px solid var(--border); background: #fff; border-radius: 2px;
+  }
+  .doc-row input[type=text] { width: 100%; font-size: 13px; padding: 7px 8px; }
+  .doc-row .titles { display: grid; grid-template-columns: 70px 1fr; gap: 8px; }
+  .doc-row .filename { grid-column: 1 / -1; font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  .doc-row .remove-btn {
+    background: none; border: none; color: var(--red); cursor: pointer; font-size: 18px; line-height: 1;
+    padding: 4px 8px;
+  }
+
+  .generate-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--red);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+  .generate-btn:hover { background: var(--red-dark); }
+  .generate-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+  .progress-wrap { margin-top: 14px; display: none; }
+  .progress-bar-track { background: var(--border); border-radius: 6px; height: 10px; overflow: hidden; }
+  .progress-bar-fill { background: var(--gold); height: 100%; width: 0%; transition: width .2s; }
+  .progress-label { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; }
+
+  .status-msg { margin-top: 14px; padding: 12px 14px; border-radius: 5px; font-size: 13.5px; display: none; }
+  .status-msg.error { background: #fdecec; border: 1px solid var(--red); color: var(--red-dark); display: block; }
+  .status-msg.success { background: #f0fdf1; border: 1px solid #2e9e3f; color: #1e6b2b; display: block; }
+
+  .helper-text { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+  .empty-state { text-align: center; padding: 30px 10px; color: var(--text-muted); font-size: 13px; }
+
+  .mode-toggle {
+    display: flex;
+    gap: 0;
+    margin-bottom: 22px;
+    border: 1px solid var(--dark);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .mode-toggle button {
+    flex: 1;
+    padding: 14px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    background: #fff;
+    color: var(--dark);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .mode-toggle button + button { border-left: 1px solid var(--dark); }
+  .mode-toggle button.active { background: var(--dark); color: #fff; }
+  .mode-toggle button:not(.active):hover { background: var(--grey-bg); }
+
+  textarea {
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+  }
+  textarea:focus { outline: 2px solid var(--gold); border-color: var(--red); }
+
+  .subsection-divider {
+    grid-column: 1 / -1;
+    border-top: 1px dashed var(--border);
+    margin: 6px 0 2px;
+    padding-top: 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  #itemList { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .item-row {
+    display: grid;
+    grid-template-columns: 1fr 90px auto;
+    gap: 10px;
+    align-items: start;
+    padding: 10px 12px;
+    background: var(--grey-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+  }
+  .item-row textarea { width: 100%; font-size: 13px; padding: 7px 8px; min-height: 40px; }
+  .item-row input[type=text] { width: 100%; font-size: 13px; padding: 7px 8px; }
+  .item-row .remove-btn {
+    background: none; border: none; color: var(--red); cursor: pointer; font-size: 18px; line-height: 1;
+    padding: 4px 8px;
+  }
+  .add-item-btn {
+    margin-top: 12px;
+    font-size: 13px;
+    padding: 9px 16px;
+    border: 1px dashed var(--dark);
+    background: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .add-item-btn:hover { background: var(--grey-bg); }
+</style>
+</head>
+<body>
+
+<header>
+  <img id="headerLogo" src="" alt="IMPI logo">
+  <div>
+    <h1>JOC Binder Assembler</h1>
+    <p id="headerSubtitle">IMPI RMS (Pty) Ltd — internal tool</p>
+  </div>
+</header>
+
+<main>
+
+  <div class="mode-toggle">
+    <button type="button" id="modeJocBtn" class="active">JOC Presentation File</button>
+    <button type="button" id="modeOutstandingBtn">Outstanding Documents Submission</button>
+  </div>
+
+  <div class="card step-card">
+    <div class="card-header">
+      <div class="step-num">1</div>
+      <h2>Event details</h2>
+    </div>
+    <div class="card-body">
+      <div class="field-grid">
+        <div class="field full">
+          <label for="eventName">Event name</label>
+          <input type="text" id="eventName" placeholder="e.g. Tequila &amp; Mexican Food Festival">
+        </div>
+        <div class="field">
+          <label for="clientName">Client</label>
+          <input type="text" id="clientName" placeholder="e.g. Marks Park Sports Club">
+        </div>
+        <div class="field">
+          <label for="venue">Venue</label>
+          <input type="text" id="venue" placeholder="e.g. Marks Park, Johannesburg">
+        </div>
+        <div class="field">
+          <label for="eventDate">Event date</label>
+          <input type="text" id="eventDate" placeholder="e.g. 8 August 2026">
+        </div>
+        <div class="field">
+          <label for="docVersion">Document version</label>
+          <input type="text" id="docVersion" value="V1.0">
+        </div>
+        <div class="field full">
+          <label for="preparedBy">Prepared by</label>
+          <input type="text" id="preparedBy" value="IMPI RMS (Pty) Ltd">
+        </div>
+        <div class="field full">
+          <label>Client / event logo (optional — shown on the cover page)</label>
+          <div class="logo-upload">
+            <img id="clientLogoPreview" style="display:none;">
+            <span class="placeholder" id="clientLogoPlaceholder">No logo uploaded — cover page will show a placeholder box</span>
+            <input type="file" id="clientLogoInput" accept="image/png,image/jpeg" style="display:none;">
+            <button type="button" class="btn-small" id="clientLogoBtn">Upload logo</button>
+          </div>
+        </div>
+
+        <div id="outstandingFields" class="field-grid" style="display:none; grid-column: 1 / -1;">
+          <div class="subsection-divider">Outstanding submission details</div>
+          <div class="field">
+            <label for="jocReference">JOC / application reference (optional)</label>
+            <input type="text" id="jocReference" placeholder="e.g. TWP 18/0015">
+          </div>
+          <div class="field">
+            <label for="requestedDate">Items requested on</label>
+            <input type="text" id="requestedDate" placeholder="e.g. 3 August 2026">
+          </div>
+          <div class="field full">
+            <label for="addressedTo">Addressed to (one line per address line)</label>
+            <textarea id="addressedTo" rows="3" placeholder="e.g. Tshwane Events JOC Compliance Office&#10;1st Floor, Block C, Tshwane House&#10;320 Madiba Street, Pretoria"></textarea>
+          </div>
+          <div class="field">
+            <label for="submissionDate">Submission date</label>
+            <input type="text" id="submissionDate" placeholder="e.g. 5 August 2026">
+          </div>
+          <div class="field"></div>
+          <div class="field">
+            <label for="signatoryName">Signed by</label>
+            <input type="text" id="signatoryName" value="Shane Steynfaardt">
+          </div>
+          <div class="field">
+            <label for="signatoryTitle">Title</label>
+            <input type="text" id="signatoryTitle" value="Senior Operations Manager">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card step-card">
+    <div class="card-header">
+      <div class="step-num">2</div>
+      <h2 id="docsCardTitle">Documents &amp; section order</h2>
+    </div>
+    <div class="card-body">
+      <div class="drop-zone" id="dropZone">
+        <strong>Drop PDF files here</strong> or click to browse<br>
+        <span style="font-size:12px;">You can select multiple files at once — add them in any order and sort below</span>
+        <input type="file" id="fileInput" accept="application/pdf" multiple>
+      </div>
+
+      <div id="docList"></div>
+      <div id="emptyState" class="empty-state">No documents added yet.</div>
+
+      <p class="helper-text">
+        Give each document a short <strong>section number</strong> (matching your CoJ checklist, e.g. 10c) and a clean <strong>section title</strong>
+        (e.g. "Event Risk Assessment") — this becomes the Table of Contents entry, the bookmark, and the section divider heading.
+        Use the arrows to set the order they'll appear in the final binder.
+      </p>
+    </div>
+  </div>
+
+  <div class="card step-card" id="outstandingItemsCard" style="display:none;">
+    <div class="card-header">
+      <div class="step-num">3</div>
+      <h2>Outstanding items</h2>
+    </div>
+    <div class="card-body">
+      <div id="itemList"></div>
+      <div id="itemEmptyState" class="empty-state">No outstanding items added yet.</div>
+      <button type="button" class="add-item-btn" id="addItemBtn">+ Add outstanding item</button>
+      <p class="helper-text">
+        List each item the Committee flagged as outstanding, and — where it's satisfied by one of the documents above — the matching
+        <strong>section number</strong> (e.g. 13c). This becomes the Schedule of Outstanding Items, with each row linking straight to
+        the relevant page. Leave the section number blank for items resolved without an attached document (e.g. confirmed in the letter itself).
+      </p>
+    </div>
+  </div>
+
+  <div class="card step-card">
+    <div class="card-header">
+      <div class="step-num">4</div>
+      <h2 id="generateCardTitle">Generate binder</h2>
+    </div>
+    <div class="card-body">
+      <button class="generate-btn" id="generateBtn">Generate &amp; download binder</button>
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+        <div class="progress-label" id="progressLabel">Preparing…</div>
+      </div>
+      <div class="status-msg" id="statusMsg"></div>
+      <p class="helper-text">
+        Everything happens in your browser — no files are uploaded anywhere. The output is one merged PDF with a branded cover page,
+        clickable table of contents, section dividers, page numbering throughout, and PDF bookmarks for navigation.
+      </p>
+    </div>
+  </div>
+
+</main>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="impi-logo-data.js"></script>
+<script src="binder-core.js"></script>
+<script>
+(function () {
+  document.getElementById('headerLogo').src = IMPI_LOGO_BASE64;
+
+  // ---------------- state ----------------
+  let documents = []; // { id, file, bytes, sectionNumber, sectionTitle }
+  let outstandingItems = []; // { id, itemText, sectionRef }
+  let submissionType = 'joc'; // 'joc' | 'outstanding'
+  let nextItemId = 1;
+  let clientLogoBytes = null;
+  let clientLogoType = null;
+  let nextId = 1;
+
+  function base64ToUint8Array(base64DataUrl) {
+    const base64 = base64DataUrl.split(',')[1];
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  // ---------------- client logo upload ----------------
+  const clientLogoInput = document.getElementById('clientLogoInput');
+  document.getElementById('clientLogoBtn').addEventListener('click', () => clientLogoInput.click());
+  clientLogoInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const buf = new Uint8Array(await file.arrayBuffer());
+    clientLogoBytes = buf;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = document.getElementById('clientLogoPreview');
+      img.src = reader.result;
+      img.style.display = 'inline-block';
+      document.getElementById('clientLogoPlaceholder').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ---------------- document add / list ----------------
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => addFiles(e.target.files));
+
+  ['dragenter', 'dragover'].forEach(evt =>
+    dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); })
+  );
+  ['dragleave', 'drop'].forEach(evt =>
+    dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); })
+  );
+  dropZone.addEventListener('drop', (e) => addFiles(e.dataTransfer.files));
+
+  async function addFiles(fileList) {
+    const files = Array.from(fileList).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+    for (const file of files) {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      documents.push({
+        id: nextId++,
+        file,
+        bytes,
+        sectionNumber: String(documents.length + 1),
+        sectionTitle: file.name.replace(/\.pdf$/i, ''),
+      });
+    }
+    fileInput.value = '';
+    renderDocList();
+  }
+
+  function moveDoc(id, dir) {
+    const idx = documents.findIndex(d => d.id === id);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= documents.length) return;
+    [documents[idx], documents[newIdx]] = [documents[newIdx], documents[idx]];
+    renderDocList();
+  }
+  function removeDoc(id) {
+    documents = documents.filter(d => d.id !== id);
+    renderDocList();
+  }
+
+  function renderDocList() {
+    const list = document.getElementById('docList');
+    const empty = document.getElementById('emptyState');
+    list.innerHTML = '';
+    empty.style.display = documents.length ? 'none' : 'block';
+
+    documents.forEach((doc, i) => {
+      const row = document.createElement('div');
+      row.className = 'doc-row';
+      row.innerHTML = `
+        <div class="order-controls">
+          <button type="button" data-act="up" title="Move up">▲</button>
+          <button type="button" data-act="down" title="Move down">▼</button>
+        </div>
+        <div style="font-weight:700; text-align:center; color:var(--text-muted);">${i + 1}</div>
+        <div>
+          <div class="titles">
+            <input type="text" data-field="sectionNumber" value="${escapeAttr(doc.sectionNumber)}" placeholder="No.">
+            <input type="text" data-field="sectionTitle" value="${escapeAttr(doc.sectionTitle)}" placeholder="Section title">
+          </div>
+          <div class="filename">${escapeHtml(doc.file.name)} · ${(doc.bytes.length / 1024).toFixed(0)} KB</div>
+        </div>
+        <button type="button" class="remove-btn" title="Remove">&times;</button>
+      `;
+      row.querySelector('[data-act="up"]').addEventListener('click', () => moveDoc(doc.id, -1));
+      row.querySelector('[data-act="down"]').addEventListener('click', () => moveDoc(doc.id, 1));
+      row.querySelector('.remove-btn').addEventListener('click', () => removeDoc(doc.id));
+      row.querySelector('[data-field="sectionNumber"]').addEventListener('input', (e) => { doc.sectionNumber = e.target.value; });
+      row.querySelector('[data-field="sectionTitle"]').addEventListener('input', (e) => { doc.sectionTitle = e.target.value; });
+      list.appendChild(row);
+    });
+  }
+
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function escapeAttr(s) { return escapeHtml(s); }
+
+  // ---------------- submission mode toggle ----------------
+  const modeJocBtn = document.getElementById('modeJocBtn');
+  const modeOutstandingBtn = document.getElementById('modeOutstandingBtn');
+  const outstandingFields = document.getElementById('outstandingFields');
+  const outstandingItemsCard = document.getElementById('outstandingItemsCard');
+  const docsCardTitle = document.getElementById('docsCardTitle');
+  const generateCardTitle = document.getElementById('generateCardTitle');
+  const headerSubtitle = document.getElementById('headerSubtitle');
+  const submissionDateInput = document.getElementById('submissionDate');
+
+  function todayFormatted() {
+    return new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  function renumberSteps() {
+    const visibleCards = Array.from(document.querySelectorAll('.step-card')).filter(c => c.style.display !== 'none');
+    visibleCards.forEach((card, i) => {
+      const num = card.querySelector('.step-num');
+      if (num) num.textContent = String(i + 1);
+    });
+  }
+
+  function setMode(mode) {
+    submissionType = mode;
+    const isOutstanding = mode === 'outstanding';
+
+    modeJocBtn.classList.toggle('active', !isOutstanding);
+    modeOutstandingBtn.classList.toggle('active', isOutstanding);
+
+    outstandingFields.style.display = isOutstanding ? 'grid' : 'none';
+    outstandingItemsCard.style.display = isOutstanding ? 'block' : 'none';
+
+    docsCardTitle.textContent = isOutstanding ? 'Outstanding documents & section order' : 'Documents & section order';
+    generateCardTitle.textContent = isOutstanding ? 'Generate submission' : 'Generate binder';
+    document.getElementById('generateBtn').textContent = isOutstanding ? 'Generate & download submission' : 'Generate & download binder';
+    headerSubtitle.textContent = isOutstanding
+      ? 'IMPI RMS (Pty) Ltd — outstanding documents submission'
+      : 'IMPI RMS (Pty) Ltd — internal tool';
+
+    if (isOutstanding && !submissionDateInput.value) {
+      submissionDateInput.value = todayFormatted();
+    }
+
+    renumberSteps();
+  }
+
+  modeJocBtn.addEventListener('click', () => setMode('joc'));
+  modeOutstandingBtn.addEventListener('click', () => setMode('outstanding'));
+
+  // ---------------- outstanding items add / list ----------------
+  document.getElementById('addItemBtn').addEventListener('click', () => {
+    outstandingItems.push({ id: nextItemId++, itemText: '', sectionRef: '' });
+    renderItemList();
+  });
+
+  function removeItem(id) {
+    outstandingItems = outstandingItems.filter(it => it.id !== id);
+    renderItemList();
+  }
+
+  function renderItemList() {
+    const list = document.getElementById('itemList');
+    const empty = document.getElementById('itemEmptyState');
+    list.innerHTML = '';
+    empty.style.display = outstandingItems.length ? 'none' : 'block';
+
+    outstandingItems.forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <textarea data-field="itemText" rows="2" placeholder="e.g. Updated PSIRA certificate reflecting current renewal">${escapeHtml(item.itemText)}</textarea>
+        <input type="text" data-field="sectionRef" value="${escapeAttr(item.sectionRef)}" placeholder="Sec. no.">
+        <button type="button" class="remove-btn" title="Remove">&times;</button>
+      `;
+      row.querySelector('[data-field="itemText"]').addEventListener('input', (e) => { item.itemText = e.target.value; });
+      row.querySelector('[data-field="sectionRef"]').addEventListener('input', (e) => { item.sectionRef = e.target.value; });
+      row.querySelector('.remove-btn').addEventListener('click', () => removeItem(item.id));
+      list.appendChild(row);
+    });
+  }
+
+  // ---------------- generate ----------------
+  const generateBtn = document.getElementById('generateBtn');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressFill = document.getElementById('progressFill');
+  const progressLabel = document.getElementById('progressLabel');
+  const statusMsg = document.getElementById('statusMsg');
+
+  generateBtn.addEventListener('click', async () => {
+    statusMsg.style.display = 'none';
+    statusMsg.className = 'status-msg';
+
+    if (!documents.length) {
+      statusMsg.textContent = 'Add at least one PDF document before generating the binder.';
+      statusMsg.className = 'status-msg error';
+      statusMsg.style.display = 'block';
+      return;
+    }
+
+    generateBtn.disabled = true;
+    progressWrap.style.display = 'block';
+    progressFill.style.width = '2%';
+    progressLabel.textContent = 'Starting…';
+
+    try {
+      const impiLogoBytes = base64ToUint8Array(IMPI_LOGO_BASE64);
+      const isOutstanding = submissionType === 'outstanding';
+      const result = await BinderCore.generateBinder({
+        submissionType,
+        eventName: document.getElementById('eventName').value || 'Untitled Event',
+        clientName: document.getElementById('clientName').value,
+        venue: document.getElementById('venue').value,
+        eventDate: document.getElementById('eventDate').value,
+        preparedBy: document.getElementById('preparedBy').value,
+        docVersion: document.getElementById('docVersion').value,
+        impiLogoBytes,
+        clientLogoBytes,
+        documents: documents.map(d => ({ bytes: d.bytes, sectionNumber: d.sectionNumber, title: d.sectionTitle })),
+        jocReference: document.getElementById('jocReference').value,
+        addressedTo: document.getElementById('addressedTo').value,
+        requestedDate: document.getElementById('requestedDate').value,
+        submissionDate: document.getElementById('submissionDate').value,
+        signatoryName: document.getElementById('signatoryName').value,
+        signatoryTitle: document.getElementById('signatoryTitle').value,
+        outstandingItems: outstandingItems.map(it => ({ itemText: it.itemText, sectionRef: it.sectionRef })),
+        onProgress: (p) => {
+          const pct = 5 + Math.round((p.index / p.total) * 90);
+          progressFill.style.width = pct + '%';
+          progressLabel.textContent = `Embedding ${p.index + 1} of ${p.total}: ${p.title}`;
+        },
+      });
+
+      progressFill.style.width = '100%';
+      progressLabel.textContent = 'Done — starting download…';
+
+      const blob = new Blob([result.bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const safeName = (document.getElementById('eventName').value || 'JOC_Binder').replace(/[^a-z0-9]+/gi, '_');
+      a.href = url;
+      a.download = isOutstanding ? `${safeName}_Outstanding_Submission.pdf` : `${safeName}_JOC_Binder.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      statusMsg.textContent = isOutstanding
+        ? `Submission generated successfully — ${result.totalPages} pages, ${documents.length} document(s), ${outstandingItems.length} outstanding item(s) addressed. Check your downloads folder.`
+        : `Binder generated successfully — ${result.totalPages} pages, ${documents.length} sections. Check your downloads folder.`;
+      statusMsg.className = 'status-msg success';
+      statusMsg.style.display = 'block';
+    } catch (err) {
+      console.error(err);
+      statusMsg.textContent = 'Something went wrong generating the file: ' + err.message;
+      statusMsg.className = 'status-msg error';
+      statusMsg.style.display = 'block';
+    } finally {
+      generateBtn.disabled = false;
+      setTimeout(() => { progressWrap.style.display = 'none'; progressFill.style.width = '0%'; }, 1500);
+    }
+  });
+
+  renderDocList();
+  renderItemList();
+  renumberSteps();
+})();
+</script>
+
+</body>
 </html>
