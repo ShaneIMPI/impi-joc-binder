@@ -188,31 +188,7 @@
       height: logoDim.height,
     });
 
-    const logoBoxW = 150, logoBoxH = 70;
-    const logoBoxX = PAGE_W - MARGIN - logoBoxW;
-    const logoBoxY = PAGE_H - MARGIN - logoBoxH;
-    if (clientLogo) {
-      const cDim = scaleToFit(clientLogo, logoBoxW, logoBoxH);
-      cover.drawImage(clientLogo, {
-        x: logoBoxX + (logoBoxW - cDim.width) / 2,
-        y: logoBoxY + (logoBoxH - cDim.height) / 2,
-        width: cDim.width,
-        height: cDim.height,
-      });
-    } else {
-      drawDashedRect(cover, logoBoxX, logoBoxY, logoBoxW, logoBoxH, GREY);
-      const label = 'CLIENT / EVENT LOGO';
-      const w = helv.widthOfTextAtSize(label, 8);
-      cover.drawText(label, {
-        x: logoBoxX + (logoBoxW - w) / 2,
-        y: logoBoxY + logoBoxH / 2 - 4,
-        size: 8,
-        font: helv,
-        color: GREY,
-      });
-    }
-
-    let cy = PAGE_H - MARGIN - logoBoxH - 30;
+    let cy = PAGE_H - MARGIN - 70 - 30;
     cover.drawRectangle({ x: 0, y: cy, width: PAGE_W, height: 8, color: RED });
     cy -= 55;
     const title = isOutstanding ? 'OUTSTANDING DOCUMENTATION SUBMISSION' : 'JOC PRESENTATION FILE';
@@ -249,8 +225,41 @@
       cy -= 22;
     }
 
-    // Document control block near bottom
+    // ---- Client / event logo: large and centred, in the open space between
+    // the event details and the Document Control block. Sized to whatever
+    // room is actually available so it never crowds either section. ----
     const dcY = isOutstanding ? 130 : 170;
+    const bigLogoMaxW = 260, bigLogoMaxH = 150;
+    const logoAreaTop = cy - 8;
+    const logoAreaBottom = dcY + 20 + 18;
+    const logoAreaH = Math.max(60, logoAreaTop - logoAreaBottom);
+    const bigLogoBoxH = Math.min(bigLogoMaxH, logoAreaH);
+    const bigLogoBoxW = bigLogoMaxW;
+    const bigLogoBoxX = (PAGE_W - bigLogoBoxW) / 2;
+    const bigLogoBoxY = logoAreaBottom + (logoAreaH - bigLogoBoxH) / 2;
+
+    if (clientLogo) {
+      const cDim = scaleToFit(clientLogo, bigLogoBoxW, bigLogoBoxH);
+      cover.drawImage(clientLogo, {
+        x: (PAGE_W - cDim.width) / 2,
+        y: bigLogoBoxY + (bigLogoBoxH - cDim.height) / 2,
+        width: cDim.width,
+        height: cDim.height,
+      });
+    } else {
+      drawDashedRect(cover, bigLogoBoxX, bigLogoBoxY, bigLogoBoxW, bigLogoBoxH, GREY);
+      const label = 'CLIENT / EVENT LOGO';
+      const w = helv.widthOfTextAtSize(label, 9);
+      cover.drawText(label, {
+        x: (PAGE_W - w) / 2,
+        y: bigLogoBoxY + bigLogoBoxH / 2 - 4,
+        size: 9,
+        font: helv,
+        color: GREY,
+      });
+    }
+
+    // Document control block near bottom
     cover.drawLine({ start: { x: MARGIN, y: dcY + 20 }, end: { x: PAGE_W - MARGIN, y: dcY + 20 }, thickness: 1, color: GOLD });
     cover.drawText('DOCUMENT CONTROL', { x: MARGIN, y: dcY, size: 11, font: helvB, color: DARK });
     const dcRows = [
