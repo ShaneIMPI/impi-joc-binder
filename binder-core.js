@@ -180,7 +180,7 @@
 
     // ---------------- Cover page ----------------
     const cover = outDoc.addPage([PAGE_W, PAGE_H]);
-    const logoDim = scaleToFit(impiLogo, 150, 70);
+    const logoDim = scaleToFit(impiLogo, 110, 48);
     cover.drawImage(impiLogo, {
       x: MARGIN,
       y: PAGE_H - MARGIN - logoDim.height,
@@ -188,7 +188,7 @@
       height: logoDim.height,
     });
 
-    let cy = PAGE_H - MARGIN - 70 - 30;
+    let cy = PAGE_H - MARGIN - 48 - 20;
     cover.drawRectangle({ x: 0, y: cy, width: PAGE_W, height: 8, color: RED });
     cy -= 55;
     const title = isOutstanding ? 'OUTSTANDING DOCUMENTATION SUBMISSION' : 'JOC PRESENTATION FILE';
@@ -229,7 +229,7 @@
     // the event details and the Document Control block. Sized to whatever
     // room is actually available so it never crowds either section. ----
     const dcY = isOutstanding ? 130 : 170;
-    const bigLogoMaxW = 260, bigLogoMaxH = 150;
+    const bigLogoMaxW = 320, bigLogoMaxH = 260;
     const logoAreaTop = cy - 8;
     const logoAreaBottom = dcY + 20 + 18;
     const logoAreaH = Math.max(60, logoAreaTop - logoAreaBottom);
