@@ -388,10 +388,11 @@
       <h2>Application checklist</h2>
     </div>
     <div class="card-body">
-      <div class="notice">
-        <strong>Check before you submit:</strong> this is a suggested starting list for the selected municipality and application type.
-        Requirements change, so confirm it against the licensing authority's current checklist and edit, add or remove items as needed.
-      </div>
+      <div class="notice" id="rulesBox"></div>
+      <p class="helper-text" style="margin-top:10px;">
+        <strong>Check before you submit:</strong> the list below is built from published guidance for the selected authority and municipality.
+        Requirements and fees change, so confirm it against the licensing authority's current checklist and edit, add or remove items as needed.
+      </p>
       <div id="checklistList"></div>
       <div id="checklistEmptyState" class="empty-state">No checklist items yet.</div>
       <div class="btn-row" style="margin-top:12px;">
@@ -450,82 +451,127 @@
     'Johannesburg': {
       municipality: 'City of Johannesburg Metropolitan Municipality',
       authority: 'Gauteng Liquor Board',
+      region: 'gauteng',
+      // City of Johannesburg JOC file: event overview, venue permission letter, security plan,
+      // crowd management plan, liquor licence, proof of payment to relevant departments.
       extras: [
-        'City of Johannesburg event approval / JOC approval letter',
-        'Ward councillor notification and proof of delivery',
-        'JMPD (Johannesburg Metropolitan Police Department) event correspondence',
+        'JOC file: event overview and venue permission letter',
+        'JOC file: event security plan and crowd management plan',
+        'JOC file: proof of payment to the relevant City departments',
       ],
     },
     'Cape Town': {
       municipality: 'City of Cape Town Metropolitan Municipality',
       authority: 'Western Cape Liquor Authority',
+      region: 'wc',
+      // City of Cape Town event permit requirements.
       extras: [
-        'City of Cape Town special event permit or event application confirmation',
-        'Notification to ward councillor and affected neighbours',
-        'SAPS / City law enforcement event correspondence',
+        'City of Cape Town event application (event log number) and completed indemnity form',
+        'Confirmation of public liability insurance',
+        'SAPS Event Safety Grading Certificate',
+        'Community participation plan, including communication with the ward councillor(s)',
       ],
     },
     'Ekurhuleni': {
       municipality: 'City of Ekurhuleni Metropolitan Municipality',
       authority: 'Gauteng Liquor Board',
+      region: 'gauteng',
+      // SASREA section 6(3) event risk categorisation is required by SAPS/EMPD for larger events.
       extras: [
-        'City of Ekurhuleni event approval / JOC approval letter',
-        'Ward councillor notification and proof of delivery',
-        'EMPD (Ekurhuleni Metropolitan Police Department) event correspondence',
+        'City of Ekurhuleni application to host an event (completed)',
+        'SAPS event risk categorisation application / outcome (SASREA section 6(3))',
       ],
     },
     'Tshwane': {
       municipality: 'City of Tshwane Metropolitan Municipality',
       authority: 'Gauteng Liquor Board',
+      region: 'gauteng',
+      // Tshwane Events JOC: present at least three weeks before the event; JOC form + event safety plan.
       extras: [
-        'Tshwane Events JOC approval letter',
-        'Ward councillor notification and proof of delivery',
-        'TMPD (Tshwane Metropolitan Police Department) event correspondence',
+        'Tshwane Events JOC application form (submitted at least three weeks before the event)',
+        'Event safety plan for JOC evaluation (SASREA, Act 2 of 2010)',
       ],
     },
   };
 
-  const BASE_CHECKLIST = [
-    'Completed and signed application form',
-    'Proof of payment of the application fee',
-    'Applicant identity document / company registration (CIPC) documents',
-    'SARS tax compliance status',
-    'Proof of premises: title deed, lease or landowner / venue owner consent',
-    'Zoning certificate or confirmation of land use',
-    'Site plan / layout of the licensed area',
-    'Health / environmental health compliance documentation',
-    'Fire safety compliance documentation',
-    'Proof of public notice of the application',
-    'Event safety and security management plan / risk assessment',
-  ];
-
-  const TYPE_EXTRAS = {
-    'Special Event / Temporary': [
-      'Event programme, expected attendance and liquor trading hours',
-      'Liquor service, security and crowd management arrangements',
-    ],
-    'New Licence': [
-      'Motivation / business plan for the licence',
-    ],
-    'Transfer': [
-      'Copy of the current liquor licence',
-      'Transferor (seller) consent / sale agreement',
-    ],
-    'Renewal': [
-      'Copy of the current liquor licence',
-      'Proof that annual fees and prior compliance are up to date',
-    ],
-    'Variation / Amendment': [
-      'Copy of the current liquor licence',
-      'Motivation for the variation and amended plans',
-    ],
+  // Authority lists. "Special Event / Temporary" lists are based on published guidance (see `source`).
+  const SPECIAL_EVENT = {
+    gauteng: {
+      verified: true,
+      items: [
+        'Completed application form (submitted in duplicate)',
+        'Proof of lawful occupation: written confirmation that the premises may be used for the event',
+        'Written motivation with supporting documents: impact on the community and surrounding area, types of liquor and number of units to be sold',
+        'Detailed layout plan / sketch: premises, patron seating, nearby parks, schools, religious centres and old age homes, traffic flow and parking',
+        'Certified copies of identity documents of each applicant',
+        'Proof of payment of the application fee',
+        'Certificate of incorporation (CIPC), where the applicant is a company, CC or trust',
+        'Special Events Notice lodged at the local police station, with proof of lodgement',
+      ],
+      rules: 'Gauteng Liquor Board, special event licence: lodge at least 14 days before the event. A licence runs for up to 14 consecutive days and no more than 30 days in a calendar year. The application fee was reported as R1 000 (confirm the current amount). SAPS may comment within 7 days of lodgement.',
+      source: 'Based on published guidance (Quicket, Liquor Link; checked 30 Oct 2026). The official Gauteng regulations and forms could not be opened, so check against the current Gauteng Liquor Board forms.',
+    },
+    wc: {
+      verified: true,
+      items: [
+        'Completed event liquor licence application form, stating the event date(s)',
+        'Floor plan, site plan and aerial map of the venue',
+        'Description and photographs of the venue',
+        'Written representations / motivation in support of the application',
+        'Certified identity documents, or company / organisation documents with authority to apply',
+        'Affidavit confirming the applicant is not disqualified from holding a licence',
+        'Nomination of the event manager',
+        "Venue owner's consent / proof of right of occupation",
+        'Proof of payment of the application fee',
+        'Proof of lodgement with the Designated Liquor Officer (SAPS)',
+        'Proof of lodgement with the municipality',
+      ],
+      rules: 'Western Cape Liquor Authority, event licence: lodge at least 39 days before the event; late applications need condonation and carry penalties. The WCLA will not process the application without proof of lodgement with both the Designated Liquor Officer and the municipality. Reported fees: R570 application fee plus a per-event-day fee on grant. Fees are usually adjusted each 1 December, so confirm the current amounts.',
+      source: 'Based on published guidance (liquor-licence advisory sites and SD Law; checked 30 Oct 2026). The official WCLA documents could not be opened, so check against the current WCLA event licence checklist and forms.',
+    },
   };
 
+  const GENERIC_LIST = [
+    'Completed and signed application form',
+    'Proof of payment of the application fee',
+    'Certified identity documents, or company / entity registration documents',
+    'Proof of right to occupy the premises (title deed, lease or owner consent)',
+    'Written motivation in support of the application',
+    'Site plan / layout of the premises',
+    'Zoning certificate or confirmation of land use',
+  ];
+  const TYPE_EXTRAS = {
+    'New Licence': ['Proof of public notice of the application'],
+    'Transfer': ['Copy of the current liquor licence', 'Transferor (seller) consent / sale agreement'],
+    'Renewal': ['Copy of the current liquor licence', 'Proof that annual fees are up to date'],
+    'Variation / Amendment': ['Copy of the current liquor licence', 'Motivation for the variation and amended plans'],
+  };
+
+  function currentListInfo() {
+    const m = MUNICIPALITIES[$('municipality').value];
+    const type = $('licenceType').value;
+    const region = m ? m.region : 'gauteng';
+    if (type === 'Special Event / Temporary') return { m, ...SPECIAL_EVENT[region] };
+    const auth = region === 'wc' ? 'Western Cape Liquor Authority' : 'Gauteng Liquor Board';
+    return {
+      m, verified: false,
+      items: [...GENERIC_LIST, ...(TYPE_EXTRAS[type] || [])],
+      rules: '',
+      source: `This is a general starting list for "${type}" applications. It has not been checked against official ${auth} requirements, so confirm it with the authority before relying on it.`,
+    };
+  }
+
   function buildSuggestedChecklist() {
-    const m = MUNICIPALITIES[document.getElementById('municipality').value];
-    const t = TYPE_EXTRAS[document.getElementById('licenceType').value] || [];
-    const texts = [...BASE_CHECKLIST, ...(m ? m.extras : []), ...t];
+    const info = currentListInfo();
+    const texts = [...info.items, ...(info.m ? info.m.extras : [])];
     return texts.map(text => ({ id: nextItemId++, itemText: text, docId: '' }));
+  }
+
+  function renderRules() {
+    const info = currentListInfo();
+    const box = $('rulesBox');
+    box.innerHTML = (info.rules ? `<p style="margin:0 0 6px;"><strong>Key rules:</strong> ${escapeHtml(info.rules)}</p>` : '') +
+      `<p style="margin:0;"><strong>${info.verified ? 'Source' : 'Not verified'}:</strong> ${escapeHtml(info.source)}</p>`;
   }
 
   function base64ToUint8Array(base64DataUrl) {
@@ -688,6 +734,7 @@
       if (!$('liqSubmissionDate').value) $('liqSubmissionDate').value = todayFormatted();
       applyMunicipality(true);
       if (!checklist.length) { checklist = buildSuggestedChecklist(); checklistDirty = false; }
+      renderRules();
       renderChecklist();
     }
     renumberSteps();
@@ -707,11 +754,12 @@
     }
   }
   function maybeReloadChecklist() {
+    renderRules();
     if (!checklistDirty) { checklist = buildSuggestedChecklist(); renderChecklist(); }
   }
   $('municipality').addEventListener('change', () => { applyMunicipality(false); maybeReloadChecklist(); });
   $('licenceType').addEventListener('change', maybeReloadChecklist);
-  $('resetChecklistBtn').addEventListener('click', () => { checklist = buildSuggestedChecklist(); checklistDirty = false; renderChecklist(); });
+  $('resetChecklistBtn').addEventListener('click', () => { renderRules(); checklist = buildSuggestedChecklist(); checklistDirty = false; renderChecklist(); });
   $('addCheckBtn').addEventListener('click', () => {
     checklist.push({ id: nextItemId++, itemText: '', docId: '' });
     checklistDirty = true;
