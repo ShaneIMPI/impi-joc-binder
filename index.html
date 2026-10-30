@@ -3,265 +3,219 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IMPI JOC Binder Assembler</title>
+<title>IMPI Binder Assembler</title>
 <style>
   :root {
     --red: #DE1819;
     --red-dark: #B01415;
     --gold: #FDDB07;
     --dark: #231F20;
-    --grey-bg: #F4F4F5;
-    --border: #E0E0E2;
-    --text-muted: #6B6B6E;
+    --ink: #1c1a1b;
+    --bg: #f3f3f5;
+    --card: #ffffff;
+    --border: #e4e4e8;
+    --muted: #6b6b72;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(20,20,25,.05), 0 8px 24px rgba(20,20,25,.06);
   }
   * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
-    font-family: 'Segoe UI', Calibri, Arial, sans-serif;
-    background: var(--grey-bg);
-    color: var(--dark);
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Calibri, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.45;
   }
-  header {
-    background: var(--dark);
-    border-bottom: 4px solid var(--red);
-    padding: 18px 28px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  header img { height: 46px; }
-  header h1 {
-    font-size: 19px;
+
+  /* ---------- hero ---------- */
+  .hero {
+    position: relative;
+    background: radial-gradient(900px 300px at 85% -40%, rgba(222,24,25,.55), transparent 60%), linear-gradient(135deg, #1a1718 0%, #2b2627 100%);
     color: #fff;
-    margin: 0;
-    font-weight: 600;
-  }
-  header p {
-    margin: 2px 0 0;
-    color: #c9c9c9;
-    font-size: 12.5px;
-  }
-  main {
-    max-width: 880px;
-    margin: 28px auto 80px;
-    padding: 0 20px;
-  }
-  .card {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    margin-bottom: 22px;
+    padding: 28px 24px 74px;
     overflow: hidden;
   }
-  .card-header {
-    background: #fff;
-    border-bottom: 2px solid var(--red);
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  .hero::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px;
+    background: linear-gradient(90deg, var(--red) 0 70%, var(--gold) 70% 100%);
   }
-  .step-num {
-    background: var(--red);
-    color: #fff;
-    width: 26px; height: 26px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700;
-    flex-shrink: 0;
-  }
-  .card-header h2 { font-size: 15px; margin: 0; }
-  .card-body { padding: 20px; }
-  .field-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-  .field { display: flex; flex-direction: column; gap: 5px; }
-  .field.full { grid-column: 1 / -1; }
-  label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.02em; }
-  input[type=text], input[type=date] {
-    padding: 9px 10px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    font-size: 14px;
-    font-family: inherit;
-  }
-  input:focus { outline: 2px solid var(--gold); border-color: var(--red); }
+  .hero-inner { max-width: 940px; margin: 0 auto; display: flex; align-items: center; gap: 18px; }
+  .logo-plate { background: #fff; border-radius: 12px; padding: 8px 12px; display: flex; align-items: center; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+  .logo-plate img { height: 44px; display: block; }
+  .hero h1 { margin: 0; font-size: 24px; font-weight: 750; letter-spacing: -.01em; }
+  .hero p { margin: 3px 0 0; color: #cfcfd4; font-size: 13.5px; }
 
-  .logo-upload {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px;
-    border: 1px dashed var(--border);
-    border-radius: 4px;
+  main { max-width: 940px; margin: -48px auto 80px; padding: 0 18px; position: relative; z-index: 2; }
+
+  /* ---------- mode selector ---------- */
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 22px; }
+  .mode {
+    text-align: left; font-family: inherit; cursor: pointer;
+    background: var(--card); border: 2px solid transparent; border-radius: var(--radius);
+    padding: 16px 16px 14px; box-shadow: var(--shadow); transition: transform .12s, border-color .12s, box-shadow .12s;
+    display: flex; flex-direction: column; gap: 4px; position: relative;
   }
-  .logo-upload img { max-height: 50px; max-width: 120px; }
-  .logo-upload .placeholder { font-size: 12px; color: var(--text-muted); }
+  .mode:hover { transform: translateY(-2px); }
+  .mode .m-ico { width: 34px; height: 34px; border-radius: 10px; background: var(--bg); display: grid; place-items: center; font-size: 17px; margin-bottom: 6px; }
+  .mode .m-title { font-weight: 750; font-size: 14.5px; }
+  .mode .m-desc { font-size: 12.3px; color: var(--muted); }
+  .mode.active { border-color: var(--red); }
+  .mode.active .m-ico { background: var(--red); color: #fff; }
+  .mode.active::after {
+    content: "Selected"; position: absolute; top: 12px; right: 12px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    background: var(--dark); color: var(--gold); padding: 3px 8px; border-radius: 99px;
+  }
+
+  /* ---------- cards ---------- */
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+  .card-header { padding: 18px 22px 0; display: flex; align-items: center; gap: 12px; }
+  .step-num {
+    background: var(--dark); color: var(--gold);
+    width: 30px; height: 30px; border-radius: 10px;
+    display: grid; place-items: center; font-size: 14px; font-weight: 800; flex-shrink: 0;
+  }
+  .card-header h2 { font-size: 16.5px; margin: 0; font-weight: 750; letter-spacing: -.005em; }
+  .card-body { padding: 16px 22px 22px; }
+
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  input[type=text], textarea, select {
+    padding: 11px 12px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 14.5px; font-family: inherit; background: #fff; color: var(--ink); width: 100%;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, #777 50%), linear-gradient(135deg, #777 50%, transparent 50%); background-position: calc(100% - 18px) 52%, calc(100% - 13px) 52%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 32px; }
+  textarea { resize: vertical; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 4px rgba(222,24,25,.12); }
+
+  .sub-block { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .subsection-divider {
+    grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 8px;
+    font-size: 11.5px; font-weight: 800; color: var(--dark); text-transform: uppercase; letter-spacing: .06em;
+  }
+  .subsection-divider::after { content: ""; flex: 1; height: 2px; background: linear-gradient(90deg, var(--gold), transparent); }
+
+  .logo-upload { display: flex; align-items: center; gap: 14px; padding: 12px; border: 1.5px dashed #cfcfd6; border-radius: 12px; background: #fafafb; }
+  .logo-upload img { max-height: 54px; max-width: 130px; border-radius: 4px; }
+  .logo-upload .placeholder { font-size: 12.5px; color: var(--muted); flex: 1; }
+
   .btn-small {
-    font-size: 12.5px;
-    padding: 6px 12px;
-    border: 1px solid var(--dark);
-    background: #fff;
-    border-radius: 4px;
-    cursor: pointer;
+    font-size: 13px; font-weight: 650; padding: 8px 14px; border: 1.5px solid var(--dark);
+    background: #fff; border-radius: 9px; cursor: pointer; font-family: inherit; color: var(--dark);
   }
-  .btn-small:hover { background: var(--grey-bg); }
+  .btn-small:hover { background: var(--dark); color: #fff; }
 
   .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 6px;
-    padding: 28px 20px;
-    text-align: center;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: border-color .15s, background .15s;
+    border: 2px dashed #cdcdd4; border-radius: 14px; padding: 30px 20px; text-align: center; color: var(--muted);
+    cursor: pointer; transition: border-color .15s, background .15s; background: #fafafb;
   }
-  .drop-zone.drag-over { border-color: var(--red); background: #fff5f5; }
-  .drop-zone strong { color: var(--dark); }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--red); background: #fff6f6; }
+  .drop-zone .dz-ico { font-size: 28px; line-height: 1; margin-bottom: 8px; }
+  .drop-zone strong { color: var(--ink); font-size: 15px; }
   .drop-zone input { display: none; }
 
-  #docList { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
-  .doc-row {
-    display: grid;
-    grid-template-columns: auto 70px 1fr auto;
-    gap: 10px;
-    align-items: center;
-    padding: 10px 12px;
-    background: var(--grey-bg);
-    border: 1px solid var(--border);
-    border-radius: 5px;
+  #docList, #itemList, #checklistList { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .doc-row, .item-row {
+    display: grid; gap: 12px; align-items: center; padding: 12px 14px;
+    background: #fafafb; border: 1.5px solid var(--border); border-radius: 12px;
   }
-  .doc-row .order-controls { display: flex; flex-direction: column; gap: 2px; }
+  .doc-row { grid-template-columns: auto 32px 1fr auto; }
+  .doc-row .order-controls { display: flex; flex-direction: column; gap: 3px; }
   .doc-row .order-controls button {
-    width: 22px; height: 18px; font-size: 10px; cursor: pointer;
-    border: 1px solid var(--border); background: #fff; border-radius: 2px;
+    width: 26px; height: 20px; font-size: 10px; cursor: pointer; color: var(--dark);
+    border: 1px solid var(--border); background: #fff; border-radius: 6px;
   }
-  .doc-row input[type=text] { width: 100%; font-size: 13px; padding: 7px 8px; }
-  .doc-row .titles { display: grid; grid-template-columns: 70px 1fr; gap: 8px; }
-  .doc-row .filename { grid-column: 1 / -1; font-size: 11px; color: var(--text-muted); margin-top: 3px; }
-  .doc-row .remove-btn {
-    background: none; border: none; color: var(--red); cursor: pointer; font-size: 18px; line-height: 1;
-    padding: 4px 8px;
-  }
+  .doc-row .order-controls button:hover { background: var(--dark); color: #fff; }
+  .doc-row .idx { font-weight: 800; text-align: center; color: var(--muted); }
+  .doc-row input[type=text] { font-size: 13.5px; padding: 8px 10px; }
+  .doc-row .titles { display: grid; grid-template-columns: 76px 1fr; gap: 8px; }
+  .doc-row .filename { font-size: 11.5px; color: var(--muted); margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .remove-btn { background: none; border: none; color: var(--red); cursor: pointer; font-size: 22px; line-height: 1; padding: 4px 8px; border-radius: 8px; }
+  .remove-btn:hover { background: #fdecec; }
+
+  .item-row { grid-template-columns: 1fr 90px auto; align-items: start; }
+  .item-row textarea { font-size: 13.5px; padding: 8px 10px; min-height: 42px; }
+  .item-row input[type=text] { font-size: 13.5px; padding: 8px 10px; }
+  .check-row { grid-template-columns: 26px 1fr minmax(180px, 38%) auto; }
+  .check-row .tick { width: 22px; height: 22px; border-radius: 7px; border: 2px solid #cfcfd6; display: grid; place-items: center; font-size: 13px; color: transparent; font-weight: 800; }
+  .check-row.linked .tick { background: #1f9d4a; border-color: #1f9d4a; color: #fff; }
+  .check-row textarea, .check-row select { font-size: 13.5px; padding: 8px 10px; }
+  .check-row { align-items: center; }
+  .check-row select { padding-right: 28px; }
+
+  .add-item-btn { margin-top: 12px; font-size: 13.5px; font-weight: 650; padding: 10px 16px; border: 1.5px dashed var(--dark); background: #fff; border-radius: 10px; cursor: pointer; font-family: inherit; }
+  .add-item-btn:hover { background: var(--bg); }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  .notice { margin-top: 14px; padding: 12px 14px; border-radius: 10px; font-size: 12.8px; background: #fff9d6; border: 1px solid #efd84b; color: #5b4c00; }
 
   .generate-btn {
-    width: 100%;
-    padding: 15px;
-    background: var(--red);
-    color: #fff;
-    font-size: 15px;
-    font-weight: 700;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    letter-spacing: 0.02em;
+    width: 100%; padding: 17px; background: linear-gradient(135deg, var(--red), var(--red-dark)); color: #fff;
+    font-size: 16px; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; letter-spacing: .02em;
+    box-shadow: 0 8px 20px rgba(222,24,25,.28); transition: transform .12s, box-shadow .12s;
+    font-family: inherit;
   }
-  .generate-btn:hover { background: var(--red-dark); }
-  .generate-btn:disabled { background: #ccc; cursor: not-allowed; }
+  .generate-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(222,24,25,.34); }
+  .generate-btn:disabled { background: #c9c9ce; box-shadow: none; cursor: not-allowed; transform: none; }
 
-  .progress-wrap { margin-top: 14px; display: none; }
-  .progress-bar-track { background: var(--border); border-radius: 6px; height: 10px; overflow: hidden; }
-  .progress-bar-fill { background: var(--gold); height: 100%; width: 0%; transition: width .2s; }
-  .progress-label { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; }
+  .progress-wrap { margin-top: 16px; display: none; }
+  .progress-bar-track { background: var(--border); border-radius: 99px; height: 10px; overflow: hidden; }
+  .progress-bar-fill { background: linear-gradient(90deg, var(--gold), #f5b800); height: 100%; width: 0%; transition: width .2s; border-radius: 99px; }
+  .progress-label { font-size: 12.5px; color: var(--muted); margin-top: 7px; }
 
-  .status-msg { margin-top: 14px; padding: 12px 14px; border-radius: 5px; font-size: 13.5px; display: none; }
+  .status-msg { margin-top: 14px; padding: 13px 15px; border-radius: 10px; font-size: 13.8px; display: none; }
   .status-msg.error { background: #fdecec; border: 1px solid var(--red); color: var(--red-dark); display: block; }
-  .status-msg.success { background: #f0fdf1; border: 1px solid #2e9e3f; color: #1e6b2b; display: block; }
+  .status-msg.success { background: #effcf1; border: 1px solid #2e9e3f; color: #1e6b2b; display: block; }
 
-  .helper-text { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
-  .empty-state { text-align: center; padding: 30px 10px; color: var(--text-muted); font-size: 13px; }
+  .helper-text { font-size: 12.5px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .empty-state { text-align: center; padding: 26px 10px; color: var(--muted); font-size: 13px; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 20px 40px; }
 
-  .mode-toggle {
-    display: flex;
-    gap: 0;
-    margin-bottom: 22px;
-    border: 1px solid var(--dark);
-    border-radius: 6px;
-    overflow: hidden;
+  @media (max-width: 720px) {
+    .modes { grid-template-columns: 1fr; }
+    .field-grid, .sub-block { grid-template-columns: 1fr; }
+    .doc-row { grid-template-columns: auto 1fr auto; }
+    .doc-row .idx { display: none; }
+    .check-row { grid-template-columns: 24px 1fr auto; }
+    .check-row select { grid-column: 2 / 3; }
+    .hero h1 { font-size: 20px; }
   }
-  .mode-toggle button {
-    flex: 1;
-    padding: 14px 10px;
-    font-size: 14px;
-    font-weight: 700;
-    border: none;
-    background: #fff;
-    color: var(--dark);
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .mode-toggle button + button { border-left: 1px solid var(--dark); }
-  .mode-toggle button.active { background: var(--dark); color: #fff; }
-  .mode-toggle button:not(.active):hover { background: var(--grey-bg); }
-
-  textarea {
-    padding: 9px 10px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    font-size: 14px;
-    font-family: inherit;
-    resize: vertical;
-  }
-  textarea:focus { outline: 2px solid var(--gold); border-color: var(--red); }
-
-  .subsection-divider {
-    grid-column: 1 / -1;
-    border-top: 1px dashed var(--border);
-    margin: 6px 0 2px;
-    padding-top: 14px;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-  }
-
-  #itemList { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
-  .item-row {
-    display: grid;
-    grid-template-columns: 1fr 90px auto;
-    gap: 10px;
-    align-items: start;
-    padding: 10px 12px;
-    background: var(--grey-bg);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-  }
-  .item-row textarea { width: 100%; font-size: 13px; padding: 7px 8px; min-height: 40px; }
-  .item-row input[type=text] { width: 100%; font-size: 13px; padding: 7px 8px; }
-  .item-row .remove-btn {
-    background: none; border: none; color: var(--red); cursor: pointer; font-size: 18px; line-height: 1;
-    padding: 4px 8px;
-  }
-  .add-item-btn {
-    margin-top: 12px;
-    font-size: 13px;
-    padding: 9px 16px;
-    border: 1px dashed var(--dark);
-    background: #fff;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  .add-item-btn:hover { background: var(--grey-bg); }
 </style>
 </head>
 <body>
 
-<header>
-  <img id="headerLogo" src="" alt="IMPI logo">
-  <div>
-    <h1>JOC Binder Assembler</h1>
-    <p id="headerSubtitle">IMPI RMS (Pty) Ltd — internal tool</p>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="logo-plate"><img id="headerLogo" src="" alt="IMPI logo"></div>
+    <div>
+      <h1>Binder Assembler</h1>
+      <p id="headerSubtitle">IMPI RMS (Pty) Ltd — JOC presentation file</p>
+    </div>
   </div>
 </header>
 
 <main>
 
-  <div class="mode-toggle">
-    <button type="button" id="modeJocBtn" class="active">JOC Presentation File</button>
-    <button type="button" id="modeOutstandingBtn">Outstanding Documents Submission</button>
+  <div class="modes" role="tablist">
+    <button type="button" id="modeJocBtn" class="mode active">
+      <span class="m-ico">&#128218;</span>
+      <span class="m-title">JOC Presentation File</span>
+      <span class="m-desc">Full event binder for the Joint Operations Committee.</span>
+    </button>
+    <button type="button" id="modeOutstandingBtn" class="mode">
+      <span class="m-ico">&#128206;</span>
+      <span class="m-title">Outstanding Documents</span>
+      <span class="m-desc">Cover letter and schedule answering the Committee's open items.</span>
+    </button>
+    <button type="button" id="modeLiquorBtn" class="mode">
+      <span class="m-ico">&#127863;</span>
+      <span class="m-title">Liquor Application</span>
+      <span class="m-desc">Johannesburg, Cape Town, Ekurhuleni &amp; Tshwane licence applications.</span>
+    </button>
   </div>
 
   <div class="card step-card">
@@ -272,15 +226,15 @@
     <div class="card-body">
       <div class="field-grid">
         <div class="field full">
-          <label for="eventName">Event name</label>
+          <label for="eventName" id="eventNameLabel">Event name</label>
           <input type="text" id="eventName" placeholder="e.g. Tequila &amp; Mexican Food Festival">
         </div>
         <div class="field">
-          <label for="clientName">Client</label>
+          <label for="clientName" id="clientNameLabel">Client</label>
           <input type="text" id="clientName" placeholder="e.g. Marks Park Sports Club">
         </div>
         <div class="field">
-          <label for="venue">Venue</label>
+          <label for="venue" id="venueLabel">Venue</label>
           <input type="text" id="venue" placeholder="e.g. Marks Park, Johannesburg">
         </div>
         <div class="field">
@@ -296,16 +250,17 @@
           <input type="text" id="preparedBy" value="IMPI RMS (Pty) Ltd">
         </div>
         <div class="field full">
-          <label>Client / event logo (optional — shown on the cover page)</label>
+          <label>Client / event logo (optional — shown large on the cover page)</label>
           <div class="logo-upload">
             <img id="clientLogoPreview" style="display:none;">
-            <span class="placeholder" id="clientLogoPlaceholder">No logo uploaded — cover page will show a placeholder box</span>
+            <span class="placeholder" id="clientLogoPlaceholder">No logo uploaded — the cover will show a placeholder box</span>
             <input type="file" id="clientLogoInput" accept="image/png,image/jpeg" style="display:none;">
             <button type="button" class="btn-small" id="clientLogoBtn">Upload logo</button>
           </div>
         </div>
 
-        <div id="outstandingFields" class="field-grid" style="display:none; grid-column: 1 / -1;">
+        <!-- Outstanding-only -->
+        <div id="outstandingFields" class="sub-block" style="display:none;">
           <div class="subsection-divider">Outstanding submission details</div>
           <div class="field">
             <label for="jocReference">JOC / application reference (optional)</label>
@@ -333,6 +288,55 @@
             <input type="text" id="signatoryTitle" value="Senior Operations Manager">
           </div>
         </div>
+
+        <!-- Liquor-only -->
+        <div id="liquorFields" class="sub-block" style="display:none;">
+          <div class="subsection-divider">Liquor licence application details</div>
+          <div class="field">
+            <label for="municipality">Municipality</label>
+            <select id="municipality">
+              <option value="Johannesburg">City of Johannesburg</option>
+              <option value="Cape Town">City of Cape Town</option>
+              <option value="Ekurhuleni">City of Ekurhuleni</option>
+              <option value="Tshwane">City of Tshwane</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="licensingAuthority">Licensing authority</label>
+            <input type="text" id="licensingAuthority" value="Gauteng Liquor Board">
+          </div>
+          <div class="field">
+            <label for="licenceType">Application type</label>
+            <select id="licenceType">
+              <option>Special Event / Temporary</option>
+              <option>New Licence</option>
+              <option>Transfer</option>
+              <option>Renewal</option>
+              <option>Variation / Amendment</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="applicationRef">Application reference (optional)</label>
+            <input type="text" id="applicationRef" placeholder="e.g. as issued by the authority">
+          </div>
+          <div class="field full">
+            <label for="liqAddressedTo">Addressed to (one line per address line)</label>
+            <textarea id="liqAddressedTo" rows="3" placeholder="e.g. Gauteng Liquor Board&#10;Licensing Division&#10;(physical or postal address)"></textarea>
+          </div>
+          <div class="field">
+            <label for="liqSubmissionDate">Submission date</label>
+            <input type="text" id="liqSubmissionDate" placeholder="e.g. 5 August 2026">
+          </div>
+          <div class="field"></div>
+          <div class="field">
+            <label for="liqSignatoryName">Signed by</label>
+            <input type="text" id="liqSignatoryName" value="Shane Steynfaardt">
+          </div>
+          <div class="field">
+            <label for="liqSignatoryTitle">Title</label>
+            <input type="text" id="liqSignatoryTitle" value="Senior Operations Manager">
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -344,8 +348,9 @@
     </div>
     <div class="card-body">
       <div class="drop-zone" id="dropZone">
+        <div class="dz-ico">&#128196;</div>
         <strong>Drop PDF files here</strong> or click to browse<br>
-        <span style="font-size:12px;">You can select multiple files at once — add them in any order and sort below</span>
+        <span style="font-size:12.5px;">Select several at once — add them in any order and sort below</span>
         <input type="file" id="fileInput" accept="application/pdf" multiple>
       </div>
 
@@ -353,9 +358,9 @@
       <div id="emptyState" class="empty-state">No documents added yet.</div>
 
       <p class="helper-text">
-        Give each document a short <strong>section number</strong> (matching your CoJ checklist, e.g. 10c) and a clean <strong>section title</strong>
-        (e.g. "Event Risk Assessment") — this becomes the Table of Contents entry, the bookmark, and the section divider heading.
-        Use the arrows to set the order they'll appear in the final binder.
+        Give each document a short <strong>section number</strong> (e.g. 10c) and a clean <strong>section title</strong>
+        (e.g. "Event Risk Assessment") — this becomes the Table of Contents entry, the bookmark and the divider heading.
+        Use the same leading number for related documents (2a, 2b, 2c) to group them under one section. Use the arrows to set the order.
       </p>
     </div>
   </div>
@@ -370,9 +375,32 @@
       <div id="itemEmptyState" class="empty-state">No outstanding items added yet.</div>
       <button type="button" class="add-item-btn" id="addItemBtn">+ Add outstanding item</button>
       <p class="helper-text">
-        List each item the Committee flagged as outstanding, and — where it's satisfied by one of the documents above — the matching
+        List each item the Committee flagged as outstanding and, where it is satisfied by one of the documents above, the matching
         <strong>section number</strong> (e.g. 13c). This becomes the Schedule of Outstanding Items, with each row linking straight to
-        the relevant page. Leave the section number blank for items resolved without an attached document (e.g. confirmed in the letter itself).
+        the relevant page. Leave the section number blank for items resolved without an attached document.
+      </p>
+    </div>
+  </div>
+
+  <div class="card step-card" id="checklistCard" style="display:none;">
+    <div class="card-header">
+      <div class="step-num">3</div>
+      <h2>Application checklist</h2>
+    </div>
+    <div class="card-body">
+      <div class="notice">
+        <strong>Check before you submit:</strong> this is a suggested starting list for the selected municipality and application type.
+        Requirements change, so confirm it against the licensing authority's current checklist and edit, add or remove items as needed.
+      </div>
+      <div id="checklistList"></div>
+      <div id="checklistEmptyState" class="empty-state">No checklist items yet.</div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button type="button" class="add-item-btn" id="addCheckBtn" style="margin-top:0;">+ Add requirement</button>
+        <button type="button" class="btn-small" id="resetChecklistBtn">Reload suggested checklist</button>
+      </div>
+      <p class="helper-text">
+        For each requirement, pick the uploaded document that satisfies it. The checklist page in the binder shows the document and its page number,
+        and each row links straight to that page. Leave a requirement unlinked if it is not applicable or still to follow.
       </p>
     </div>
   </div>
@@ -391,12 +419,13 @@
       <div class="status-msg" id="statusMsg"></div>
       <p class="helper-text">
         Everything happens in your browser — no files are uploaded anywhere. The output is one merged PDF with a branded cover page,
-        clickable table of contents, section dividers, page numbering throughout, and PDF bookmarks for navigation.
+        clickable table of contents, section dividers, page numbering throughout and PDF bookmarks for navigation.
       </p>
     </div>
   </div>
 
 </main>
+<footer>IMPI RMS (Pty) Ltd &middot; 10 Kosmos Crescent, Rynoue AH, Roodeplaat, Pretoria &middot; 012 543 0640 &middot; info@impi-secure.co.za</footer>
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="impi-logo-data.js"></script>
@@ -408,11 +437,96 @@
   // ---------------- state ----------------
   let documents = []; // { id, file, bytes, sectionNumber, sectionTitle }
   let outstandingItems = []; // { id, itemText, sectionRef }
-  let submissionType = 'joc'; // 'joc' | 'outstanding'
+  let checklist = []; // { id, itemText, docId }
+  let checklistDirty = false;
+  let submissionType = 'joc'; // 'joc' | 'outstanding' | 'liquor'
   let nextItemId = 1;
   let clientLogoBytes = null;
-  let clientLogoType = null;
   let nextId = 1;
+  let lastAutoAddress = '';
+
+  // ---------------- liquor data (editable starting points — verify with the authority) ----------------
+  const MUNICIPALITIES = {
+    'Johannesburg': {
+      municipality: 'City of Johannesburg Metropolitan Municipality',
+      authority: 'Gauteng Liquor Board',
+      extras: [
+        'City of Johannesburg event approval / JOC approval letter',
+        'Ward councillor notification and proof of delivery',
+        'JMPD (Johannesburg Metropolitan Police Department) event correspondence',
+      ],
+    },
+    'Cape Town': {
+      municipality: 'City of Cape Town Metropolitan Municipality',
+      authority: 'Western Cape Liquor Authority',
+      extras: [
+        'City of Cape Town special event permit or event application confirmation',
+        'Notification to ward councillor and affected neighbours',
+        'SAPS / City law enforcement event correspondence',
+      ],
+    },
+    'Ekurhuleni': {
+      municipality: 'City of Ekurhuleni Metropolitan Municipality',
+      authority: 'Gauteng Liquor Board',
+      extras: [
+        'City of Ekurhuleni event approval / JOC approval letter',
+        'Ward councillor notification and proof of delivery',
+        'EMPD (Ekurhuleni Metropolitan Police Department) event correspondence',
+      ],
+    },
+    'Tshwane': {
+      municipality: 'City of Tshwane Metropolitan Municipality',
+      authority: 'Gauteng Liquor Board',
+      extras: [
+        'Tshwane Events JOC approval letter',
+        'Ward councillor notification and proof of delivery',
+        'TMPD (Tshwane Metropolitan Police Department) event correspondence',
+      ],
+    },
+  };
+
+  const BASE_CHECKLIST = [
+    'Completed and signed application form',
+    'Proof of payment of the application fee',
+    'Applicant identity document / company registration (CIPC) documents',
+    'SARS tax compliance status',
+    'Proof of premises: title deed, lease or landowner / venue owner consent',
+    'Zoning certificate or confirmation of land use',
+    'Site plan / layout of the licensed area',
+    'Health / environmental health compliance documentation',
+    'Fire safety compliance documentation',
+    'Proof of public notice of the application',
+    'Event safety and security management plan / risk assessment',
+  ];
+
+  const TYPE_EXTRAS = {
+    'Special Event / Temporary': [
+      'Event programme, expected attendance and liquor trading hours',
+      'Liquor service, security and crowd management arrangements',
+    ],
+    'New Licence': [
+      'Motivation / business plan for the licence',
+    ],
+    'Transfer': [
+      'Copy of the current liquor licence',
+      'Transferor (seller) consent / sale agreement',
+    ],
+    'Renewal': [
+      'Copy of the current liquor licence',
+      'Proof that annual fees and prior compliance are up to date',
+    ],
+    'Variation / Amendment': [
+      'Copy of the current liquor licence',
+      'Motivation for the variation and amended plans',
+    ],
+  };
+
+  function buildSuggestedChecklist() {
+    const m = MUNICIPALITIES[document.getElementById('municipality').value];
+    const t = TYPE_EXTRAS[document.getElementById('licenceType').value] || [];
+    const texts = [...BASE_CHECKLIST, ...(m ? m.extras : []), ...t];
+    return texts.map(text => ({ id: nextItemId++, itemText: text, docId: '' }));
+  }
 
   function base64ToUint8Array(base64DataUrl) {
     const base64 = base64DataUrl.split(',')[1];
@@ -422,31 +536,33 @@
     return bytes;
   }
 
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function escapeAttr(s) { return escapeHtml(s); }
+  function $(id) { return document.getElementById(id); }
+
   // ---------------- client logo upload ----------------
-  const clientLogoInput = document.getElementById('clientLogoInput');
-  document.getElementById('clientLogoBtn').addEventListener('click', () => clientLogoInput.click());
+  const clientLogoInput = $('clientLogoInput');
+  $('clientLogoBtn').addEventListener('click', () => clientLogoInput.click());
   clientLogoInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const buf = new Uint8Array(await file.arrayBuffer());
-    clientLogoBytes = buf;
+    clientLogoBytes = new Uint8Array(await file.arrayBuffer());
     const reader = new FileReader();
     reader.onload = () => {
-      const img = document.getElementById('clientLogoPreview');
+      const img = $('clientLogoPreview');
       img.src = reader.result;
       img.style.display = 'inline-block';
-      document.getElementById('clientLogoPlaceholder').style.display = 'none';
+      $('clientLogoPlaceholder').style.display = 'none';
     };
     reader.readAsDataURL(file);
   });
 
   // ---------------- document add / list ----------------
-  const dropZone = document.getElementById('dropZone');
-  const fileInput = document.getElementById('fileInput');
+  const dropZone = $('dropZone');
+  const fileInput = $('fileInput');
 
   dropZone.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => addFiles(e.target.files));
-
   ['dragenter', 'dragover'].forEach(evt =>
     dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); })
   );
@@ -484,8 +600,8 @@
   }
 
   function renderDocList() {
-    const list = document.getElementById('docList');
-    const empty = document.getElementById('emptyState');
+    const list = $('docList');
+    const empty = $('emptyState');
     list.innerHTML = '';
     empty.style.display = documents.length ? 'none' : 'block';
 
@@ -497,8 +613,8 @@
           <button type="button" data-act="up" title="Move up">▲</button>
           <button type="button" data-act="down" title="Move down">▼</button>
         </div>
-        <div style="font-weight:700; text-align:center; color:var(--text-muted);">${i + 1}</div>
-        <div>
+        <div class="idx">${i + 1}</div>
+        <div style="min-width:0;">
           <div class="titles">
             <input type="text" data-field="sectionNumber" value="${escapeAttr(doc.sectionNumber)}" placeholder="No.">
             <input type="text" data-field="sectionTitle" value="${escapeAttr(doc.sectionTitle)}" placeholder="Section title">
@@ -510,24 +626,30 @@
       row.querySelector('[data-act="up"]').addEventListener('click', () => moveDoc(doc.id, -1));
       row.querySelector('[data-act="down"]').addEventListener('click', () => moveDoc(doc.id, 1));
       row.querySelector('.remove-btn').addEventListener('click', () => removeDoc(doc.id));
-      row.querySelector('[data-field="sectionNumber"]').addEventListener('input', (e) => { doc.sectionNumber = e.target.value; });
-      row.querySelector('[data-field="sectionTitle"]').addEventListener('input', (e) => { doc.sectionTitle = e.target.value; });
+      const numInput = row.querySelector('[data-field="sectionNumber"]');
+      const titleInput = row.querySelector('[data-field="sectionTitle"]');
+      numInput.addEventListener('input', (e) => { doc.sectionNumber = e.target.value; });
+      titleInput.addEventListener('input', (e) => { doc.sectionTitle = e.target.value; });
+      // refresh the checklist's document pickers once editing of a field is finished
+      numInput.addEventListener('change', renderChecklist);
+      titleInput.addEventListener('change', renderChecklist);
       list.appendChild(row);
     });
+    renderChecklist();
   }
 
-  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-  function escapeAttr(s) { return escapeHtml(s); }
-
   // ---------------- submission mode toggle ----------------
-  const modeJocBtn = document.getElementById('modeJocBtn');
-  const modeOutstandingBtn = document.getElementById('modeOutstandingBtn');
-  const outstandingFields = document.getElementById('outstandingFields');
-  const outstandingItemsCard = document.getElementById('outstandingItemsCard');
-  const docsCardTitle = document.getElementById('docsCardTitle');
-  const generateCardTitle = document.getElementById('generateCardTitle');
-  const headerSubtitle = document.getElementById('headerSubtitle');
-  const submissionDateInput = document.getElementById('submissionDate');
+  const MODE_BTNS = { joc: $('modeJocBtn'), outstanding: $('modeOutstandingBtn'), liquor: $('modeLiquorBtn') };
+  const outstandingFields = $('outstandingFields');
+  const liquorFields = $('liquorFields');
+  const outstandingItemsCard = $('outstandingItemsCard');
+  const checklistCard = $('checklistCard');
+
+  const MODE_TEXT = {
+    joc: { subtitle: 'IMPI RMS (Pty) Ltd — JOC presentation file', docs: 'Documents & section order', gen: 'Generate binder', btn: 'Generate & download binder' },
+    outstanding: { subtitle: 'IMPI RMS (Pty) Ltd — outstanding documents submission', docs: 'Outstanding documents & section order', gen: 'Generate submission', btn: 'Generate & download submission' },
+    liquor: { subtitle: 'IMPI RMS (Pty) Ltd — liquor licence application', docs: 'Application documents & section order', gen: 'Generate application', btn: 'Generate & download application' },
+  };
 
   function todayFormatted() {
     return new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -543,33 +665,94 @@
 
   function setMode(mode) {
     submissionType = mode;
-    const isOutstanding = mode === 'outstanding';
+    const isOut = mode === 'outstanding';
+    const isLiq = mode === 'liquor';
+    Object.keys(MODE_BTNS).forEach(k => MODE_BTNS[k].classList.toggle('active', k === mode));
 
-    modeJocBtn.classList.toggle('active', !isOutstanding);
-    modeOutstandingBtn.classList.toggle('active', isOutstanding);
+    outstandingFields.style.display = isOut ? 'grid' : 'none';
+    outstandingItemsCard.style.display = isOut ? 'block' : 'none';
+    liquorFields.style.display = isLiq ? 'grid' : 'none';
+    checklistCard.style.display = isLiq ? 'block' : 'none';
 
-    outstandingFields.style.display = isOutstanding ? 'grid' : 'none';
-    outstandingItemsCard.style.display = isOutstanding ? 'block' : 'none';
+    const t = MODE_TEXT[mode];
+    $('docsCardTitle').textContent = t.docs;
+    $('generateCardTitle').textContent = t.gen;
+    $('generateBtn').textContent = t.btn;
+    $('headerSubtitle').textContent = t.subtitle;
+    $('eventNameLabel').textContent = isLiq ? 'Event / trading name' : 'Event name';
+    $('clientNameLabel').textContent = isLiq ? 'Applicant / client' : 'Client';
+    $('venueLabel').textContent = isLiq ? 'Venue / premises' : 'Venue';
 
-    docsCardTitle.textContent = isOutstanding ? 'Outstanding documents & section order' : 'Documents & section order';
-    generateCardTitle.textContent = isOutstanding ? 'Generate submission' : 'Generate binder';
-    document.getElementById('generateBtn').textContent = isOutstanding ? 'Generate & download submission' : 'Generate & download binder';
-    headerSubtitle.textContent = isOutstanding
-      ? 'IMPI RMS (Pty) Ltd — outstanding documents submission'
-      : 'IMPI RMS (Pty) Ltd — internal tool';
-
-    if (isOutstanding && !submissionDateInput.value) {
-      submissionDateInput.value = todayFormatted();
+    if (isOut && !$('submissionDate').value) $('submissionDate').value = todayFormatted();
+    if (isLiq) {
+      if (!$('liqSubmissionDate').value) $('liqSubmissionDate').value = todayFormatted();
+      applyMunicipality(true);
+      if (!checklist.length) { checklist = buildSuggestedChecklist(); checklistDirty = false; }
+      renderChecklist();
     }
-
     renumberSteps();
   }
 
-  modeJocBtn.addEventListener('click', () => setMode('joc'));
-  modeOutstandingBtn.addEventListener('click', () => setMode('outstanding'));
+  Object.keys(MODE_BTNS).forEach(k => MODE_BTNS[k].addEventListener('click', () => setMode(k)));
+
+  // ---------------- liquor: municipality / type handling ----------------
+  function applyMunicipality(initial) {
+    const m = MUNICIPALITIES[$('municipality').value];
+    if (!m) return;
+    $('licensingAuthority').value = m.authority;
+    const addr = $('liqAddressedTo');
+    if (!addr.value.trim() || addr.value === lastAutoAddress) {
+      lastAutoAddress = m.authority;
+      addr.value = lastAutoAddress;
+    }
+  }
+  function maybeReloadChecklist() {
+    if (!checklistDirty) { checklist = buildSuggestedChecklist(); renderChecklist(); }
+  }
+  $('municipality').addEventListener('change', () => { applyMunicipality(false); maybeReloadChecklist(); });
+  $('licenceType').addEventListener('change', maybeReloadChecklist);
+  $('resetChecklistBtn').addEventListener('click', () => { checklist = buildSuggestedChecklist(); checklistDirty = false; renderChecklist(); });
+  $('addCheckBtn').addEventListener('click', () => {
+    checklist.push({ id: nextItemId++, itemText: '', docId: '' });
+    checklistDirty = true;
+    renderChecklist();
+  });
+
+  function renderChecklist() {
+    const list = $('checklistList');
+    const empty = $('checklistEmptyState');
+    list.innerHTML = '';
+    empty.style.display = checklist.length ? 'none' : 'block';
+    checklist.forEach((item) => {
+      const linked = documents.some(d => String(d.id) === String(item.docId));
+      if (!linked) item.docId = '';
+      const row = document.createElement('div');
+      row.className = 'item-row check-row' + (linked ? ' linked' : '');
+      const opts = ['<option value="">— not linked —</option>'].concat(
+        documents.map(d => `<option value="${d.id}"${String(d.id) === String(item.docId) ? ' selected' : ''}>${escapeHtml((d.sectionNumber || '?') + ' – ' + (d.sectionTitle || d.file.name))}</option>`)
+      ).join('');
+      row.innerHTML = `
+        <div class="tick">&#10003;</div>
+        <textarea data-field="itemText" rows="2" placeholder="Requirement">${escapeHtml(item.itemText)}</textarea>
+        <select data-field="docId">${opts}</select>
+        <button type="button" class="remove-btn" title="Remove">&times;</button>
+      `;
+      row.querySelector('[data-field="itemText"]').addEventListener('input', (e) => { item.itemText = e.target.value; checklistDirty = true; });
+      row.querySelector('[data-field="docId"]').addEventListener('change', (e) => {
+        item.docId = e.target.value;
+        row.classList.toggle('linked', !!item.docId);
+      });
+      row.querySelector('.remove-btn').addEventListener('click', () => {
+        checklist = checklist.filter(c => c.id !== item.id);
+        checklistDirty = true;
+        renderChecklist();
+      });
+      list.appendChild(row);
+    });
+  }
 
   // ---------------- outstanding items add / list ----------------
-  document.getElementById('addItemBtn').addEventListener('click', () => {
+  $('addItemBtn').addEventListener('click', () => {
     outstandingItems.push({ id: nextItemId++, itemText: '', sectionRef: '' });
     renderItemList();
   });
@@ -580,8 +763,8 @@
   }
 
   function renderItemList() {
-    const list = document.getElementById('itemList');
-    const empty = document.getElementById('itemEmptyState');
+    const list = $('itemList');
+    const empty = $('itemEmptyState');
     list.innerHTML = '';
     empty.style.display = outstandingItems.length ? 'none' : 'block';
 
@@ -601,18 +784,18 @@
   }
 
   // ---------------- generate ----------------
-  const generateBtn = document.getElementById('generateBtn');
-  const progressWrap = document.getElementById('progressWrap');
-  const progressFill = document.getElementById('progressFill');
-  const progressLabel = document.getElementById('progressLabel');
-  const statusMsg = document.getElementById('statusMsg');
+  const generateBtn = $('generateBtn');
+  const progressWrap = $('progressWrap');
+  const progressFill = $('progressFill');
+  const progressLabel = $('progressLabel');
+  const statusMsg = $('statusMsg');
 
   generateBtn.addEventListener('click', async () => {
     statusMsg.style.display = 'none';
     statusMsg.className = 'status-msg';
 
     if (!documents.length) {
-      statusMsg.textContent = 'Add at least one PDF document before generating the binder.';
+      statusMsg.textContent = 'Add at least one PDF document before generating.';
       statusMsg.className = 'status-msg error';
       statusMsg.style.display = 'block';
       return;
@@ -625,31 +808,59 @@
 
     try {
       const impiLogoBytes = base64ToUint8Array(IMPI_LOGO_BASE64);
-      const isOutstanding = submissionType === 'outstanding';
-      const result = await BinderCore.generateBinder({
+      const isOut = submissionType === 'outstanding';
+      const isLiq = submissionType === 'liquor';
+      const muni = MUNICIPALITIES[$('municipality').value];
+
+      const opts = {
         submissionType,
-        eventName: document.getElementById('eventName').value || 'Untitled Event',
-        clientName: document.getElementById('clientName').value,
-        venue: document.getElementById('venue').value,
-        eventDate: document.getElementById('eventDate').value,
-        preparedBy: document.getElementById('preparedBy').value,
-        docVersion: document.getElementById('docVersion').value,
+        eventName: $('eventName').value || 'Untitled Event',
+        clientName: $('clientName').value,
+        venue: $('venue').value,
+        eventDate: $('eventDate').value,
+        preparedBy: $('preparedBy').value,
+        docVersion: $('docVersion').value,
         impiLogoBytes,
         clientLogoBytes,
         documents: documents.map(d => ({ bytes: d.bytes, sectionNumber: d.sectionNumber, title: d.sectionTitle })),
-        jocReference: document.getElementById('jocReference').value,
-        addressedTo: document.getElementById('addressedTo').value,
-        requestedDate: document.getElementById('requestedDate').value,
-        submissionDate: document.getElementById('submissionDate').value,
-        signatoryName: document.getElementById('signatoryName').value,
-        signatoryTitle: document.getElementById('signatoryTitle').value,
-        outstandingItems: outstandingItems.map(it => ({ itemText: it.itemText, sectionRef: it.sectionRef })),
         onProgress: (p) => {
           const pct = 5 + Math.round((p.index / p.total) * 90);
           progressFill.style.width = pct + '%';
           progressLabel.textContent = `Embedding ${p.index + 1} of ${p.total}: ${p.title}`;
         },
-      });
+      };
+
+      if (isOut) {
+        Object.assign(opts, {
+          jocReference: $('jocReference').value,
+          addressedTo: $('addressedTo').value,
+          requestedDate: $('requestedDate').value,
+          submissionDate: $('submissionDate').value,
+          signatoryName: $('signatoryName').value,
+          signatoryTitle: $('signatoryTitle').value,
+          outstandingItems: outstandingItems.map(it => ({ itemText: it.itemText, sectionRef: it.sectionRef })),
+        });
+      }
+      if (isLiq) {
+        Object.assign(opts, {
+          municipality: muni ? muni.municipality : $('municipality').value,
+          licensingAuthority: $('licensingAuthority').value,
+          licenceType: $('licenceType').value,
+          applicationRef: $('applicationRef').value,
+          addressedTo: $('liqAddressedTo').value,
+          submissionDate: $('liqSubmissionDate').value,
+          signatoryName: $('liqSignatoryName').value,
+          signatoryTitle: $('liqSignatoryTitle').value,
+          checklistItems: checklist
+            .filter(c => c.itemText.trim())
+            .map(c => {
+              const d = documents.find(x => String(x.id) === String(c.docId));
+              return { itemText: c.itemText, sectionRef: d ? d.sectionNumber : '' };
+            }),
+        });
+      }
+
+      const result = await BinderCore.generateBinder(opts);
 
       progressFill.style.width = '100%';
       progressLabel.textContent = 'Done — starting download…';
@@ -657,17 +868,20 @@
       const blob = new Blob([result.bytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      const safeName = (document.getElementById('eventName').value || 'JOC_Binder').replace(/[^a-z0-9]+/gi, '_');
+      const safeName = ($('eventName').value || 'Binder').replace(/[^a-z0-9]+/gi, '_');
+      const suffix = isLiq ? '_Liquor_Application.pdf' : isOut ? '_Outstanding_Submission.pdf' : '_JOC_Binder.pdf';
       a.href = url;
-      a.download = isOutstanding ? `${safeName}_Outstanding_Submission.pdf` : `${safeName}_JOC_Binder.pdf`;
+      a.download = safeName + suffix;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
 
-      statusMsg.textContent = isOutstanding
+      statusMsg.textContent = isLiq
+        ? `Application generated successfully — ${result.totalPages} pages, ${documents.length} document(s). Check your downloads folder.`
+        : isOut
         ? `Submission generated successfully — ${result.totalPages} pages, ${documents.length} document(s), ${outstandingItems.length} outstanding item(s) addressed. Check your downloads folder.`
-        : `Binder generated successfully — ${result.totalPages} pages, ${documents.length} sections. Check your downloads folder.`;
+        : `Binder generated successfully — ${result.totalPages} pages, ${documents.length} documents. Check your downloads folder.`;
       statusMsg.className = 'status-msg success';
       statusMsg.style.display = 'block';
     } catch (err) {
