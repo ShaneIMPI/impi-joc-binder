@@ -784,6 +784,15 @@
     } catch (e) { return ''; }
   }
 
+  function isOversize(label) { return !!label && /\bA[0-3]\b/.test(label); }
+  function isLayoutTag(t) { return t === 'Internal layout' || t === 'External layout'; }
+  function guessTag(name) {
+    const n = name.toLowerCase();
+    if (/structur/.test(n)) return 'Structural drawing';
+    if (/external|site\s*(plan|layout)|outside/.test(n)) return 'External layout';
+    if (/internal|floor\s*plan|layout/.test(n)) return 'Internal layout';
+    return '';
+  }
   async function addFiles(fileList) {
     const files = Array.from(fileList).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
     for (const file of files) {
@@ -796,12 +805,13 @@
         size: bytes.length,
         bytes,
         sizeLabel,
-        tag: '',
-        a4Copy: !!sizeLabel && sizeLabel.split(' / ').some(l => l !== 'A4'),
+        tag: guessTag(file.name),
+        a4Copy: false,
         sectionNumber: String(documents.length + 1),
         sectionTitle: file.name.replace(/\.pdf$/i, ''),
       });
     }
+    documents.forEach(d => { if (d.a4Copy === false && d._auto !== true && isOversize(d.sizeLabel) && isLayoutTag(d.tag)) { d.a4Copy = true; } d._auto = true; });
     fileInput.value = '';
     renderDocList();
   }
@@ -844,7 +854,7 @@
             <select data-field="tag">
               ${['', 'Internal layout', 'External layout', 'Structural drawing'].map(t => `<option value="${t}"${doc.tag === t ? ' selected' : ''}>${t || 'Document type: general'}</option>`).join('')}
             </select>
-            <label class="chk"><input type="checkbox" data-field="a4Copy"${doc.a4Copy ? ' checked' : ''}> Add A4 reduced copy</label>
+            <label class="chk"><input type="checkbox" data-field="a4Copy"${doc.a4Copy ? ' checked' : ''}> Add A4 reduced copy (floor plans / layouts only)</label>
             ${doc.sizeLabel ? `<span class="badge">${escapeHtml(doc.sizeLabel)}</span>` : ''}
             ${(($('fireRegion').value === 'Johannesburg' || $('fireRegion').value === 'Ekurhuleni') && (doc.tag === 'Internal layout' || doc.tag === 'External layout') && doc.sizeLabel === 'A4') ? '<span class="badge warn">Below A3 minimum</span>' : ''}
           </div>` : ''}
@@ -864,7 +874,7 @@
           doc.bytes = new Uint8Array(await f.arrayBuffer());
           doc.file = f; doc.fileName = f.name; doc.size = doc.bytes.length;
           doc.sizeLabel = await detectSize(doc.bytes);
-          if (submissionType === 'fire' && doc.sizeLabel) doc.a4Copy = doc.sizeLabel.split(' / ').some(l => l !== 'A4');
+          if (submissionType === 'fire') doc.a4Copy = isOversize(doc.sizeLabel) && isLayoutTag(doc.tag);
           renderDocList();
         });
       }
@@ -874,7 +884,7 @@
       titleInput.addEventListener('input', (e) => { doc.sectionTitle = e.target.value; });
       // refresh the checklist's document pickers once editing of a field is finished
       const tagSel = row.querySelector('[data-field="tag"]');
-      if (tagSel) tagSel.addEventListener('change', (e) => { doc.tag = e.target.value; renderDocList(); });
+      if (tagSel) tagSel.addEventListener('change', (e) => { doc.tag = e.target.value; doc.a4Copy = isOversize(doc.sizeLabel) && isLayoutTag(doc.tag); renderDocList(); });
       const a4Chk = row.querySelector('[data-field="a4Copy"]');
       if (a4Chk) a4Chk.addEventListener('change', (e) => { doc.a4Copy = e.target.checked; });
       numInput.addEventListener('change', renderChecklist);
