@@ -49,7 +49,7 @@
   main { max-width: 940px; margin: -48px auto 80px; padding: 0 18px; position: relative; z-index: 2; }
 
   /* ---------- mode selector ---------- */
-  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 22px; }
+  .modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
   .mode {
     text-align: left; font-family: inherit; cursor: pointer;
     background: var(--card); border: 2px solid transparent; border-radius: var(--radius);
@@ -140,7 +140,10 @@
   .item-row { grid-template-columns: 1fr 90px auto; align-items: start; }
   .item-row textarea { font-size: 13.5px; padding: 8px 10px; min-height: 42px; }
   .item-row input[type=text] { font-size: 13.5px; padding: 8px 10px; }
-  .check-row { grid-template-columns: 26px 1fr minmax(180px, 38%) auto; }
+  .check-row { grid-template-columns: 20px 26px 1fr minmax(180px, 38%) auto; }
+  .check-row .inc { width: 18px; height: 18px; accent-color: var(--red); cursor: pointer; }
+  .check-row.excluded { opacity: .55; }
+  .check-row.excluded textarea { background: #f1f1f3; }
   .check-row .tick { width: 22px; height: 22px; border-radius: 7px; border: 2px solid #cfcfd6; display: grid; place-items: center; font-size: 13px; color: transparent; font-weight: 800; }
   .check-row.linked .tick { background: #1f9d4a; border-color: #1f9d4a; color: #fff; }
   .check-row textarea, .check-row select { font-size: 13.5px; padding: 8px 10px; }
@@ -175,13 +178,40 @@
   .empty-state { text-align: center; padding: 26px 10px; color: var(--muted); font-size: 13px; }
   footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 20px 40px; }
 
+  .fire-opts { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 8px; }
+  .fire-opts select { width: auto; font-size: 12.5px; padding: 6px 28px 6px 9px; }
+  .fire-opts .chk { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--ink); text-transform: none; letter-spacing: 0; }
+  .fire-opts .chk input { width: auto; }
+  .badge { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 99px; background: var(--dark); color: var(--gold); letter-spacing: .03em; }
+  .badge.warn { background: #fff3cd; color: #7a5b00; border: 1px solid #efd84b; }
+  /* ---------- saved events ---------- */
+  .events-bar { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  .events-bar .ev-status { flex: 1 1 260px; font-size: 13px; color: var(--muted); min-width: 0; }
+  .events-bar .ev-status strong { color: var(--ink); }
+  .events-bar .ev-keep { display: flex; align-items: center; gap: 6px; font-size: 12.3px; font-weight: 600; color: var(--muted); text-transform: none; letter-spacing: 0; flex-basis: 100%; }
+  .events-bar .ev-keep input { width: auto; accent-color: var(--red); }
+  .btn-small.primary { background: var(--dark); color: #fff; }
+  .btn-small.primary:hover { background: var(--red); border-color: var(--red); }
+  .btn-small.danger { border-color: var(--red); color: var(--red); }
+  .btn-small.danger:hover { background: var(--red); color: #fff; }
+  #evPanel .card-body { padding-top: 14px; }
+  .ev-tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .ev-tools input[type=text] { flex: 1 1 200px; font-size: 13.5px; padding: 9px 12px; }
+  .ev-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 12px 14px; background: #fafafb; border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 8px; }
+  .ev-row.current { border-color: var(--red); background: #fff6f6; }
+  .ev-row .ev-title { font-weight: 750; font-size: 14.5px; }
+  .ev-row .ev-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .ev-row .ev-hist { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+  .ev-row .ev-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .attach-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  @media (max-width: 960px) { .modes { grid-template-columns: 1fr 1fr; } }
   @media (max-width: 720px) {
     .modes { grid-template-columns: 1fr; }
     .field-grid, .sub-block { grid-template-columns: 1fr; }
     .doc-row { grid-template-columns: auto 1fr auto; }
     .doc-row .idx { display: none; }
-    .check-row { grid-template-columns: 24px 1fr auto; }
-    .check-row select { grid-column: 2 / 3; }
+    .check-row { grid-template-columns: 20px 24px 1fr auto; }
+    .check-row select { grid-column: 3 / 4; }
     .hero h1 { font-size: 20px; }
   }
 </style>
@@ -200,6 +230,31 @@
 
 <main>
 
+  <div class="events-bar" id="evBar">
+    <div class="ev-status" id="evStatus">Event not saved yet. Save it to reopen, revise or add documents later.</div>
+    <div class="btn-row">
+      <button type="button" class="btn-small primary" id="evSaveBtn">&#128190; Save event</button>
+      <button type="button" class="btn-small" id="evSaveAsBtn" style="display:none;">Save as new event</button>
+      <button type="button" class="btn-small" id="evRevBtn" style="display:none;" title="Raises the document version (e.g. V1.0 to V1.1) and records it in the event history">New revision</button>
+      <button type="button" class="btn-small" id="evMyBtn">&#128194; My events (0)</button>
+      <button type="button" class="btn-small" id="evNewBtn">+ New event</button>
+    </div>
+    <label class="ev-keep"><input type="checkbox" id="evKeepFiles" checked> Keep the uploaded PDFs with the saved event (so you can add documents and regenerate without re-uploading)</label>
+  </div>
+
+  <div class="card" id="evPanel" style="display:none;">
+    <div class="card-body">
+      <div class="ev-tools">
+        <input type="text" id="evSearch" placeholder="Search saved events by name, client or venue">
+        <button type="button" class="btn-small" id="evImportBtn">Import event file</button>
+        <input type="file" id="evImportInput" accept=".json,application/json" style="display:none;">
+      </div>
+      <div id="evList"></div>
+      <div class="empty-state" id="evEmpty">No saved events on this computer yet.</div>
+      <p class="helper-text">Saved events live in this browser on this computer only. Use <strong>Export</strong> to keep a backup file or to move an event to another computer, then <strong>Import event file</strong> there. Clearing the browser's site data removes saved events.</p>
+    </div>
+  </div>
+
   <div class="modes" role="tablist">
     <button type="button" id="modeJocBtn" class="mode active">
       <span class="m-ico">&#128218;</span>
@@ -215,6 +270,11 @@
       <span class="m-ico">&#127863;</span>
       <span class="m-title">Liquor Application</span>
       <span class="m-desc">Johannesburg, Cape Town, Ekurhuleni &amp; Tshwane licence applications.</span>
+    </button>
+    <button type="button" id="modeFireBtn" class="mode">
+      <span class="m-ico">&#128293;</span>
+      <span class="m-title">Fire / EMS Floor Plans</span>
+      <span class="m-desc">Johannesburg EMS, Ekurhuleni and Tshwane Blue File submissions.</span>
     </button>
   </div>
 
@@ -286,6 +346,40 @@
           <div class="field">
             <label for="signatoryTitle">Title</label>
             <input type="text" id="signatoryTitle" value="Senior Operations Manager">
+          </div>
+        </div>
+
+        <!-- Fire / EMS-only -->
+        <div id="fireFields" class="sub-block" style="display:none;">
+          <div class="subsection-divider">Fire / EMS submission details</div>
+          <div class="field">
+            <label for="fireRegion">Region</label>
+            <select id="fireRegion">
+              <option value="Johannesburg">Johannesburg (EMS)</option>
+              <option value="Ekurhuleni">Ekurhuleni (floor plan)</option>
+              <option value="Tshwane">Tshwane (Blue File)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fireAuthority">Submitted to</label>
+            <input type="text" id="fireAuthority" value="City of Johannesburg EMS">
+          </div>
+          <div class="field">
+            <label for="submissionStage">Submission stage</label>
+            <select id="submissionStage">
+              <option>First submission</option>
+              <option>Post-payment submission (invoice and proof of payment)</option>
+              <option>Supplementary information</option>
+              <option>Fire rationale submission</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fireRef">EMS / file reference (optional)</label>
+            <input type="text" id="fireRef" placeholder="e.g. as issued by the department">
+          </div>
+          <div class="field full" id="engineerField" style="display:none;">
+            <label for="engineerName">Structural engineer (optional — shown on the cover)</label>
+            <input type="text" id="engineerName" placeholder="e.g. engineer / firm opening the Blue File">
           </div>
         </div>
 
@@ -385,11 +479,11 @@
   <div class="card step-card" id="checklistCard" style="display:none;">
     <div class="card-header">
       <div class="step-num">3</div>
-      <h2>Application checklist</h2>
+      <h2 id="checklistTitle">Application checklist</h2>
     </div>
     <div class="card-body">
       <div class="notice" id="rulesBox"></div>
-      <p class="helper-text" style="margin-top:10px;">
+      <p class="helper-text" style="margin-top:10px;" id="checklistIntro">
         <strong>Check before you submit:</strong> the list below is built from published guidance for the selected authority and municipality.
         Requirements and fees change, so confirm it against the licensing authority's current checklist and edit, add or remove items as needed.
       </p>
@@ -440,9 +534,14 @@
   let outstandingItems = []; // { id, itemText, sectionRef }
   let checklist = []; // { id, itemText, docId }
   let checklistDirty = false;
-  let submissionType = 'joc'; // 'joc' | 'outstanding' | 'liquor'
+  let submissionType = 'joc'; // 'joc' | 'outstanding' | 'liquor' | 'fire'
+  let checklistMode = '';
   let nextItemId = 1;
   let clientLogoBytes = null;
+  let clientLogoMime = '';
+  let currentEventId = null;
+  let currentHistory = [];
+  let currentCreated = null;
   let nextId = 1;
   let lastAutoAddress = '';
 
@@ -499,17 +598,17 @@
     gauteng: {
       verified: true,
       items: [
-        'Completed application form (submitted in duplicate)',
-        'Proof of lawful occupation: written confirmation that the premises may be used for the event',
-        'Written motivation with supporting documents: impact on the community and surrounding area, types of liquor and number of units to be sold',
-        'Detailed layout plan / sketch: premises, patron seating, nearby parks, schools, religious centres and old age homes, traffic flow and parking',
-        'Certified copies of identity documents of each applicant',
-        'Proof of payment of the application fee',
-        'Certificate of incorporation (CIPC), where the applicant is a company, CC or trust',
-        'Special Events Notice lodged at the local police station, with proof of lodgement',
+        'Form 1, fully completed and commissioned',
+        'Proof of Lawful Occupation (PLO) of the premises (lease agreement / title deed) and / or consent to use, if applicable (section 49)',
+        'Detailed written motivation in support of the application',
+        'Detailed sketch plan of the premises of the venue where the event is taking place',
+        'Certified copies of the identity document(s) of the applicant',
+        'Proof of payment of the prescribed fee (paid at Standard Bank)',
+        'Power of attorney (if applicable)',
+        'Close Corporation: CK form and resolution, if constituted by more than one member (section 49, if applicable)',
       ],
-      rules: 'Gauteng Liquor Board, special event licence: lodge at least 14 days before the event. A licence runs for up to 14 consecutive days and no more than 30 days in a calendar year. The application fee was reported as R1 000 (confirm the current amount). SAPS may comment within 7 days of lodgement.',
-      source: 'Based on published guidance (Quicket, Liquor Link; checked 30 Oct 2026). The official Gauteng regulations and forms could not be opened, so check against the current Gauteng Liquor Board forms.',
+      rules: 'Gauteng Liquor Board: all documents listed (where applicable) are mandatory when you lodge, and the application must be lodged in duplicate (original and copy) at the regional office. Guidance sites also report lodging at least 14 days before the event, but this is not on the official checklist, so confirm the timeline with the regional office.',
+      source: 'Gauteng Liquor Board "Checklist for Section 31 Applications" (Gauteng Liquor Act 2 of 2003), as displayed at the board and supplied on 13 Nov 2026. The checklist is applied here to the Special Event / Temporary type.',
     },
     wc: {
       verified: true,
@@ -547,7 +646,63 @@
     'Variation / Amendment': ['Copy of the current liquor licence', 'Motivation for the variation and amended plans'],
   };
 
+  // Supporting documents added by IMPI to every application (not part of the authority checklists).
+  const SUPPORTING_DOCS = [
+    'Liquor control plan (supporting document)',
+    'Security appointment letter / security plan (supporting document)',
+  ];
+
+  // Fire / EMS floor plan submission checklists (editable starting points)
+  const FIRE_LISTS = {
+    Johannesburg: {
+      authority: 'City of Johannesburg EMS',
+      items: [
+        'EMS fire safety application form',
+        'Floor plan(s): internal layout (A3 minimum)',
+        'Site layout: external layout (A3 minimum)',
+        'Venue permission letter',
+        'EMS invoice and proof of payment (added after the first submission)',
+        'Occupancy certificate (venue-dependent)',
+        'Fire equipment history / service records (venue-dependent)',
+        'Certificates of approval for temporary structures and electrical Certificate of Compliance (if applicable)',
+        'Gas plan (if applicable)',
+        'Fire rationale / additional information (if requested by EMS)',
+      ],
+      rules: 'Johannesburg EMS: the City events guidelines say the EMS form is submitted two weeks before the event, plans are signed off before the JOC presentation (on set sign-off days, by booking with EMS Events), and proof of payment is needed for the certificate of fitness application. Floor plans go in at A3 minimum.',
+      source: 'Based on your usual EMS submission process and the City of Johannesburg events guidelines and JOC requirements. Confirm the current process and dates with EMS.',
+    },
+    Ekurhuleni: {
+      authority: 'Ekurhuleni Emergency Management Services',
+      items: [
+        'Floor plan(s): internal layout (A3 minimum)',
+        'Site layout: external layout (A3 minimum)',
+        'Venue permission letter',
+        'Application for erection of temporary structure, OM038 (if applicable)',
+        'Invoice and proof of payment (if invoiced)',
+        'Occupancy certificate (venue-dependent)',
+        'Fire equipment history / service records (venue-dependent)',
+        'Fire rationale / additional information (if requested)',
+      ],
+      rules: 'Ekurhuleni: submitted as a floor plan submission. The City publishes an events checklist, an "Application to Host an Event" and an "Application for erection of temporary structure (OM038)".',
+      source: 'Based on your usual Ekurhuleni floor plan submissions. The City events checklist could not be opened, so confirm requirements with Ekurhuleni EMS.',
+    },
+    Tshwane: {
+      authority: 'City of Tshwane Blue File Office',
+      items: [
+        'Venue layout (internal and external)',
+        'Venue permission letter',
+        'Structural drawings (all structures)',
+      ],
+      rules: 'Tshwane Blue File: the structural engineer opens the blue file and signs off the structures. This pack is handed to the engineer, who takes it to the Blue File office to have the file opened and registered for the event.',
+      source: 'Based on your usual Tshwane Blue File process. Not independently verified, so confirm with the structural engineer.',
+    },
+  };
+
   function currentListInfo() {
+    if (submissionType === 'fire') {
+      const f = FIRE_LISTS[$('fireRegion').value] || FIRE_LISTS.Johannesburg;
+      return { m: null, verified: true, items: f.items, rules: f.rules, source: f.source };
+    }
     const m = MUNICIPALITIES[$('municipality').value];
     const type = $('licenceType').value;
     const region = m ? m.region : 'gauteng';
@@ -563,8 +718,11 @@
 
   function buildSuggestedChecklist() {
     const info = currentListInfo();
-    const texts = [...info.items, ...(info.m ? info.m.extras : [])];
-    return texts.map(text => ({ id: nextItemId++, itemText: text, docId: '' }));
+    const texts = submissionType === 'fire' ? [...info.items] : [...info.items, ...(info.m ? info.m.extras : []), ...SUPPORTING_DOCS];
+    const optional = /\((venue-dependent|if applicable|if requested|if invoiced)/i;
+    // Fire / EMS: venue-dependent items (e.g. the occupancy certificate) start excluded;
+    // tick the box on the row to include them for venues that require them.
+    return texts.map(text => ({ id: nextItemId++, itemText: text, docId: '', include: !(submissionType === 'fire' && optional.test(text)) }));
   }
 
   function renderRules() {
@@ -592,15 +750,7 @@
   clientLogoInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    clientLogoBytes = new Uint8Array(await file.arrayBuffer());
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = $('clientLogoPreview');
-      img.src = reader.result;
-      img.style.display = 'inline-block';
-      $('clientLogoPlaceholder').style.display = 'none';
-    };
-    reader.readAsDataURL(file);
+    showLogo(new Uint8Array(await file.arrayBuffer()), file.type);
   });
 
   // ---------------- document add / list ----------------
@@ -617,14 +767,37 @@
   );
   dropZone.addEventListener('drop', (e) => addFiles(e.dataTransfer.files));
 
+  const ISO_SIZES = [['A0', 1189, 841], ['A1', 841, 594], ['A2', 594, 420], ['A3', 420, 297], ['A4', 297, 210], ['A5', 210, 148]];
+  async function detectSize(bytes) {
+    try {
+      const d = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+      const labels = [];
+      for (const pg of d.getPages()) {
+        const mb = pg.getMediaBox();
+        const a = mb.width * 25.4 / 72, b = mb.height * 25.4 / 72;
+        const long = Math.max(a, b), short = Math.min(a, b);
+        let l = Math.round(long) + ' x ' + Math.round(short) + ' mm';
+        for (const [n, L, S] of ISO_SIZES) if (Math.abs(long - L) <= 6 && Math.abs(short - S) <= 6) { l = n; break; }
+        if (!labels.includes(l)) labels.push(l);
+      }
+      return labels.join(' / ');
+    } catch (e) { return ''; }
+  }
+
   async function addFiles(fileList) {
     const files = Array.from(fileList).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
     for (const file of files) {
       const bytes = new Uint8Array(await file.arrayBuffer());
+      const sizeLabel = await detectSize(bytes);
       documents.push({
         id: nextId++,
         file,
+        fileName: file.name,
+        size: bytes.length,
         bytes,
+        sizeLabel,
+        tag: '',
+        a4Copy: !!sizeLabel && sizeLabel.split(' / ').some(l => l !== 'A4'),
         sectionNumber: String(documents.length + 1),
         sectionTitle: file.name.replace(/\.pdf$/i, ''),
       });
@@ -665,18 +838,45 @@
             <input type="text" data-field="sectionNumber" value="${escapeAttr(doc.sectionNumber)}" placeholder="No.">
             <input type="text" data-field="sectionTitle" value="${escapeAttr(doc.sectionTitle)}" placeholder="Section title">
           </div>
-          <div class="filename">${escapeHtml(doc.file.name)} · ${(doc.bytes.length / 1024).toFixed(0)} KB</div>
+          <div class="filename">${escapeHtml(doc.fileName)} · ${((doc.size || 0) / 1024).toFixed(0)} KB${doc.sizeLabel ? ' · ' + escapeHtml(doc.sizeLabel) : ''}</div>
+          ${doc.bytes ? '' : '<div class="attach-row"><span class="badge warn">PDF not stored</span><button type="button" class="btn-small" data-act="attach">Attach PDF again</button><input type="file" accept="application/pdf" style="display:none;"></div>'}
+          ${submissionType === 'fire' ? `<div class="fire-opts">
+            <select data-field="tag">
+              ${['', 'Internal layout', 'External layout', 'Structural drawing'].map(t => `<option value="${t}"${doc.tag === t ? ' selected' : ''}>${t || 'Document type: general'}</option>`).join('')}
+            </select>
+            <label class="chk"><input type="checkbox" data-field="a4Copy"${doc.a4Copy ? ' checked' : ''}> Add A4 reduced copy</label>
+            ${doc.sizeLabel ? `<span class="badge">${escapeHtml(doc.sizeLabel)}</span>` : ''}
+            ${(($('fireRegion').value === 'Johannesburg' || $('fireRegion').value === 'Ekurhuleni') && (doc.tag === 'Internal layout' || doc.tag === 'External layout') && doc.sizeLabel === 'A4') ? '<span class="badge warn">Below A3 minimum</span>' : ''}
+          </div>` : ''}
         </div>
         <button type="button" class="remove-btn" title="Remove">&times;</button>
       `;
       row.querySelector('[data-act="up"]').addEventListener('click', () => moveDoc(doc.id, -1));
       row.querySelector('[data-act="down"]').addEventListener('click', () => moveDoc(doc.id, 1));
       row.querySelector('.remove-btn').addEventListener('click', () => removeDoc(doc.id));
+      const attachBtn = row.querySelector('[data-act="attach"]');
+      if (attachBtn) {
+        const attachIn = row.querySelector('.attach-row input[type=file]');
+        attachBtn.addEventListener('click', () => attachIn.click());
+        attachIn.addEventListener('change', async (e) => {
+          const f = e.target.files[0];
+          if (!f) return;
+          doc.bytes = new Uint8Array(await f.arrayBuffer());
+          doc.file = f; doc.fileName = f.name; doc.size = doc.bytes.length;
+          doc.sizeLabel = await detectSize(doc.bytes);
+          if (submissionType === 'fire' && doc.sizeLabel) doc.a4Copy = doc.sizeLabel.split(' / ').some(l => l !== 'A4');
+          renderDocList();
+        });
+      }
       const numInput = row.querySelector('[data-field="sectionNumber"]');
       const titleInput = row.querySelector('[data-field="sectionTitle"]');
       numInput.addEventListener('input', (e) => { doc.sectionNumber = e.target.value; });
       titleInput.addEventListener('input', (e) => { doc.sectionTitle = e.target.value; });
       // refresh the checklist's document pickers once editing of a field is finished
+      const tagSel = row.querySelector('[data-field="tag"]');
+      if (tagSel) tagSel.addEventListener('change', (e) => { doc.tag = e.target.value; renderDocList(); });
+      const a4Chk = row.querySelector('[data-field="a4Copy"]');
+      if (a4Chk) a4Chk.addEventListener('change', (e) => { doc.a4Copy = e.target.checked; });
       numInput.addEventListener('change', renderChecklist);
       titleInput.addEventListener('change', renderChecklist);
       list.appendChild(row);
@@ -685,7 +885,8 @@
   }
 
   // ---------------- submission mode toggle ----------------
-  const MODE_BTNS = { joc: $('modeJocBtn'), outstanding: $('modeOutstandingBtn'), liquor: $('modeLiquorBtn') };
+  const MODE_BTNS = { joc: $('modeJocBtn'), outstanding: $('modeOutstandingBtn'), liquor: $('modeLiquorBtn'), fire: $('modeFireBtn') };
+  const fireFields = $('fireFields');
   const outstandingFields = $('outstandingFields');
   const liquorFields = $('liquorFields');
   const outstandingItemsCard = $('outstandingItemsCard');
@@ -695,6 +896,7 @@
     joc: { subtitle: 'IMPI RMS (Pty) Ltd — JOC presentation file', docs: 'Documents & section order', gen: 'Generate binder', btn: 'Generate & download binder' },
     outstanding: { subtitle: 'IMPI RMS (Pty) Ltd — outstanding documents submission', docs: 'Outstanding documents & section order', gen: 'Generate submission', btn: 'Generate & download submission' },
     liquor: { subtitle: 'IMPI RMS (Pty) Ltd — liquor licence application', docs: 'Application documents & section order', gen: 'Generate application', btn: 'Generate & download application' },
+    fire: { subtitle: 'IMPI RMS (Pty) Ltd — fire / EMS floor plan submission', docs: 'Floor plans, drawings & documents', gen: 'Generate submission pack', btn: 'Generate & download submission pack' },
   };
 
   function todayFormatted() {
@@ -713,12 +915,14 @@
     submissionType = mode;
     const isOut = mode === 'outstanding';
     const isLiq = mode === 'liquor';
+    const isFireM = mode === 'fire';
     Object.keys(MODE_BTNS).forEach(k => MODE_BTNS[k].classList.toggle('active', k === mode));
 
     outstandingFields.style.display = isOut ? 'grid' : 'none';
     outstandingItemsCard.style.display = isOut ? 'block' : 'none';
     liquorFields.style.display = isLiq ? 'grid' : 'none';
-    checklistCard.style.display = isLiq ? 'block' : 'none';
+    fireFields.style.display = isFireM ? 'grid' : 'none';
+    checklistCard.style.display = (isLiq || isFireM) ? 'block' : 'none';
 
     const t = MODE_TEXT[mode];
     $('docsCardTitle').textContent = t.docs;
@@ -728,17 +932,32 @@
     $('eventNameLabel').textContent = isLiq ? 'Event / trading name' : 'Event name';
     $('clientNameLabel').textContent = isLiq ? 'Applicant / client' : 'Client';
     $('venueLabel').textContent = isLiq ? 'Venue / premises' : 'Venue';
+    $('checklistTitle').textContent = isFireM ? 'Submission checklist' : 'Application checklist';
+    $('checklistIntro').innerHTML = isFireM
+      ? '<strong>Check before you submit:</strong> this list follows your usual submission process for the selected region. Venue-dependent items (such as the occupancy certificate and fire equipment history) start unticked: tick the box on the left to include them for venues that require them, and untick anything that does not apply.'
+      : "<strong>Check before you submit:</strong> the list below is built from published guidance for the selected authority and municipality. Requirements and fees change, so confirm it against the licensing authority's current checklist and edit, add or remove items as needed.";
 
     if (isOut && !$('submissionDate').value) $('submissionDate').value = todayFormatted();
     if (isLiq) {
       if (!$('liqSubmissionDate').value) $('liqSubmissionDate').value = todayFormatted();
       applyMunicipality(true);
-      if (!checklist.length) { checklist = buildSuggestedChecklist(); checklistDirty = false; }
+    }
+    if (isLiq || isFireM) {
+      if (checklistMode !== mode || !checklist.length) { checklist = buildSuggestedChecklist(); checklistDirty = false; checklistMode = mode; }
       renderRules();
       renderChecklist();
     }
+    renderDocList();
     renumberSteps();
   }
+
+  // ---------------- fire: region handling ----------------
+  function applyFireRegion() {
+    const f = FIRE_LISTS[$('fireRegion').value];
+    if (f) $('fireAuthority').value = f.authority;
+    $('engineerField').style.display = $('fireRegion').value === 'Tshwane' ? 'flex' : 'none';
+  }
+  $('fireRegion').addEventListener('change', () => { applyFireRegion(); maybeReloadChecklist(); renderDocList(); });
 
   Object.keys(MODE_BTNS).forEach(k => MODE_BTNS[k].addEventListener('click', () => setMode(k)));
 
@@ -761,7 +980,7 @@
   $('licenceType').addEventListener('change', maybeReloadChecklist);
   $('resetChecklistBtn').addEventListener('click', () => { renderRules(); checklist = buildSuggestedChecklist(); checklistDirty = false; renderChecklist(); });
   $('addCheckBtn').addEventListener('click', () => {
-    checklist.push({ id: nextItemId++, itemText: '', docId: '' });
+    checklist.push({ id: nextItemId++, itemText: '', docId: '', include: true });
     checklistDirty = true;
     renderChecklist();
   });
@@ -775,20 +994,28 @@
       const linked = documents.some(d => String(d.id) === String(item.docId));
       if (!linked) item.docId = '';
       const row = document.createElement('div');
-      row.className = 'item-row check-row' + (linked ? ' linked' : '');
+      if (linked) item.include = true;
+      row.className = 'item-row check-row' + (linked ? ' linked' : '') + (item.include === false ? ' excluded' : '');
       const opts = ['<option value="">— not linked —</option>'].concat(
-        documents.map(d => `<option value="${d.id}"${String(d.id) === String(item.docId) ? ' selected' : ''}>${escapeHtml((d.sectionNumber || '?') + ' – ' + (d.sectionTitle || d.file.name))}</option>`)
+        documents.map(d => `<option value="${d.id}"${String(d.id) === String(item.docId) ? ' selected' : ''}>${escapeHtml((d.sectionNumber || '?') + ' – ' + (d.sectionTitle || d.fileName))}</option>`)
       ).join('');
       row.innerHTML = `
+        <input type="checkbox" class="inc" title="Include this item on the checklist"${item.include === false ? '' : ' checked'}>
         <div class="tick">&#10003;</div>
         <textarea data-field="itemText" rows="2" placeholder="Requirement">${escapeHtml(item.itemText)}</textarea>
         <select data-field="docId">${opts}</select>
         <button type="button" class="remove-btn" title="Remove">&times;</button>
       `;
       row.querySelector('[data-field="itemText"]').addEventListener('input', (e) => { item.itemText = e.target.value; checklistDirty = true; });
+      row.querySelector('.inc').addEventListener('change', (e) => {
+        item.include = e.target.checked;
+        checklistDirty = true;
+        row.classList.toggle('excluded', !item.include);
+      });
       row.querySelector('[data-field="docId"]').addEventListener('change', (e) => {
         item.docId = e.target.value;
-        row.classList.toggle('linked', !!item.docId);
+        if (item.docId) { item.include = true; }
+        renderChecklist();
       });
       row.querySelector('.remove-btn').addEventListener('click', () => {
         checklist = checklist.filter(c => c.id !== item.id);
@@ -849,6 +1076,14 @@
       return;
     }
 
+    const missingPdfs = documents.filter(d => !d.bytes);
+    if (missingPdfs.length) {
+      statusMsg.textContent = 'Attach the PDF again for: ' + missingPdfs.map(d => (d.sectionNumber ? d.sectionNumber + ' ' : '') + (d.sectionTitle || d.fileName)).join('; ') + ' (or remove them) before generating.';
+      statusMsg.className = 'status-msg error';
+      statusMsg.style.display = 'block';
+      return;
+    }
+
     generateBtn.disabled = true;
     progressWrap.style.display = 'block';
     progressFill.style.width = '2%';
@@ -858,6 +1093,7 @@
       const impiLogoBytes = base64ToUint8Array(IMPI_LOGO_BASE64);
       const isOut = submissionType === 'outstanding';
       const isLiq = submissionType === 'liquor';
+      const isFireM = submissionType === 'fire';
       const muni = MUNICIPALITIES[$('municipality').value];
 
       const opts = {
@@ -870,7 +1106,7 @@
         docVersion: $('docVersion').value,
         impiLogoBytes,
         clientLogoBytes,
-        documents: documents.map(d => ({ bytes: d.bytes, sectionNumber: d.sectionNumber, title: d.sectionTitle })),
+        documents: documents.map(d => ({ bytes: d.bytes, sectionNumber: d.sectionNumber, title: d.sectionTitle, tag: d.tag, a4Copy: isFireM ? d.a4Copy : false })),
         onProgress: (p) => {
           const pct = 5 + Math.round((p.index / p.total) * 90);
           progressFill.style.width = pct + '%';
@@ -889,6 +1125,21 @@
           outstandingItems: outstandingItems.map(it => ({ itemText: it.itemText, sectionRef: it.sectionRef })),
         });
       }
+      if (isFireM) {
+        Object.assign(opts, {
+          fireRegion: $('fireRegion').value,
+          fireAuthority: $('fireAuthority').value,
+          submissionStage: $('submissionStage').value,
+          fireRef: $('fireRef').value,
+          engineerName: $('fireRegion').value === 'Tshwane' ? $('engineerName').value : '',
+          checklistItems: checklist
+            .filter(c => c.itemText.trim() && c.include !== false)
+            .map(c => {
+              const d = documents.find(x => String(x.id) === String(c.docId));
+              return { itemText: c.itemText, sectionRef: d ? d.sectionNumber : '' };
+            }),
+        });
+      }
       if (isLiq) {
         Object.assign(opts, {
           municipality: muni ? muni.municipality : $('municipality').value,
@@ -900,7 +1151,7 @@
           signatoryName: $('liqSignatoryName').value,
           signatoryTitle: $('liqSignatoryTitle').value,
           checklistItems: checklist
-            .filter(c => c.itemText.trim())
+            .filter(c => c.itemText.trim() && c.include !== false)
             .map(c => {
               const d = documents.find(x => String(x.id) === String(c.docId));
               return { itemText: c.itemText, sectionRef: d ? d.sectionNumber : '' };
@@ -917,7 +1168,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       const safeName = ($('eventName').value || 'Binder').replace(/[^a-z0-9]+/gi, '_');
-      const suffix = isLiq ? '_Liquor_Application.pdf' : isOut ? '_Outstanding_Submission.pdf' : '_JOC_Binder.pdf';
+      const suffix = isFireM ? ($('fireRegion').value === 'Tshwane' ? '_Blue_File_Pack.pdf' : '_Fire_Submission.pdf') : isLiq ? '_Liquor_Application.pdf' : isOut ? '_Outstanding_Submission.pdf' : '_JOC_Binder.pdf';
       a.href = url;
       a.download = safeName + suffix;
       document.body.appendChild(a);
@@ -925,13 +1176,16 @@
       a.remove();
       URL.revokeObjectURL(url);
 
-      statusMsg.textContent = isLiq
+      statusMsg.textContent = isFireM
+        ? `Submission pack generated successfully — ${result.totalPages} pages. Plans larger than A4 keep their original sheet size in the PDF, so print those pages on A3 (or your plotter) and everything else on A4.`
+        : isLiq
         ? `Application generated successfully — ${result.totalPages} pages, ${documents.length} document(s). Check your downloads folder.`
         : isOut
         ? `Submission generated successfully — ${result.totalPages} pages, ${documents.length} document(s), ${outstandingItems.length} outstanding item(s) addressed. Check your downloads folder.`
         : `Binder generated successfully — ${result.totalPages} pages, ${documents.length} documents. Check your downloads folder.`;
       statusMsg.className = 'status-msg success';
       statusMsg.style.display = 'block';
+      if (currentEventId) { await guardedSave({ action: 'Generated', note: 'generated and saved' }); }
     } catch (err) {
       console.error(err);
       statusMsg.textContent = 'Something went wrong generating the file: ' + err.message;
@@ -942,6 +1196,272 @@
       setTimeout(() => { progressWrap.style.display = 'none'; progressFill.style.width = '0%'; }, 1500);
     }
   });
+
+  // ---------------- saved events (browser storage) ----------------
+  const MODE_LABEL = { joc: 'JOC Presentation File', outstanding: 'Outstanding Documents', liquor: 'Liquor Application', fire: 'Fire / EMS Floor Plans' };
+  const FIELD_IDS = ['eventName','clientName','venue','eventDate','docVersion','preparedBy',
+    'jocReference','requestedDate','addressedTo','submissionDate','signatoryName','signatoryTitle',
+    'fireRegion','fireAuthority','submissionStage','fireRef','engineerName',
+    'municipality','licensingAuthority','licenceType','applicationRef','liqAddressedTo','liqSubmissionDate','liqSignatoryName','liqSignatoryTitle'];
+  const DB_NAME = 'impiBinderEvents';
+  let evCache = [];
+  let pendingDeleteId = null;
+
+  function openDb() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) { reject(new Error('This browser is not allowing saved events (private window?).')); return; }
+      let r;
+      try { r = indexedDB.open(DB_NAME, 1); } catch (e) { reject(e); return; }
+      r.onupgradeneeded = () => { r.result.createObjectStore('events', { keyPath: 'id' }); r.result.createObjectStore('files', { keyPath: 'id' }); };
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error || new Error('Could not open browser storage.'));
+    });
+  }
+  function dbRun(names, mode, fn) {
+    return openDb().then(db => new Promise((resolve, reject) => {
+      let t, reqs;
+      try { t = db.transaction(names, mode); reqs = fn.apply(null, names.map(n => t.objectStore(n))); }
+      catch (e) { db.close(); reject(e); return; }
+      t.oncomplete = () => { db.close(); resolve(Array.isArray(reqs) ? reqs.map(q => q && q.result) : (reqs ? reqs.result : undefined)); };
+      t.onerror = () => { db.close(); reject(t.error || new Error('Storage error')); };
+      t.onabort = () => { db.close(); reject(t.error || new Error('Storage is full or was blocked.')); };
+    }));
+  }
+  const dbAllEvents = () => dbRun(['events'], 'readonly', s => s.getAll());
+  const dbGetBoth = (id) => dbRun(['events', 'files'], 'readonly', (e, f) => [e.get(id), f.get(id)]);
+  const dbPutBoth = (rec, files) => dbRun(['events', 'files'], 'readwrite', (e, f) => { e.put(rec); f.put(files); return null; });
+  const dbDelBoth = (id) => dbRun(['events', 'files'], 'readwrite', (e, f) => { e.delete(id); f.delete(id); return null; });
+
+  function newEventId() { return 'ev_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function b64ToU8(b64) {
+    const bin = atob(b64); const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function u8ToB64(u8) {
+    let s = ''; const CH = 0x8000;
+    for (let i = 0; i < u8.length; i += CH) s += String.fromCharCode.apply(null, u8.subarray(i, i + CH));
+    return btoa(s);
+  }
+  function fmtDateTime(iso) {
+    try { return new Date(iso).toLocaleString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return iso; }
+  }
+  function bumpVersion(v) {
+    const m = /^(V?)(\d+)\.(\d+)$/i.exec((v || '').trim());
+    if (m) return m[1] + m[2] + '.' + (parseInt(m[3], 10) + 1);
+    return ((v || 'V1.0').trim() || 'V1.0') + '.1';
+  }
+
+  function setEvStatus(html) { $('evStatus').innerHTML = html; }
+  function refreshEvStatus(extra) {
+    const hasCur = !!currentEventId;
+    $('evSaveAsBtn').style.display = hasCur ? '' : 'none';
+    $('evRevBtn').style.display = hasCur ? '' : 'none';
+    if (!hasCur) { setEvStatus('Event not saved yet. Save it to reopen, revise or add documents later.'); return; }
+    const last = currentHistory.length ? currentHistory[currentHistory.length - 1] : null;
+    setEvStatus('Open event: <strong>' + escapeHtml($('eventName').value || 'Untitled event') + '</strong> &middot; ' + escapeHtml($('docVersion').value) +
+      (last ? ' &middot; last saved ' + escapeHtml(fmtDateTime(last.date)) : '') + (extra ? ' &middot; ' + extra : ''));
+  }
+
+  function collectState() {
+    const fields = {};
+    FIELD_IDS.forEach(id => { const el = $(id); if (el) fields[id] = el.value; });
+    return {
+      mode: submissionType,
+      fields,
+      lastAutoAddress,
+      checklistDirty,
+      documents: documents.map(d => ({ id: d.id, fileName: d.fileName, size: d.size || (d.bytes ? d.bytes.length : 0), sizeLabel: d.sizeLabel || '', tag: d.tag || '', a4Copy: !!d.a4Copy, sectionNumber: d.sectionNumber, sectionTitle: d.sectionTitle })),
+      outstandingItems: outstandingItems.map(i => ({ id: i.id, itemText: i.itemText, sectionRef: i.sectionRef })),
+      checklist: checklist.map(c => ({ id: c.id, itemText: c.itemText, docId: c.docId, include: c.include !== false })),
+    };
+  }
+
+  async function saveEvent(opts) {
+    opts = opts || {};
+    const keep = $('evKeepFiles').checked;
+    const asNew = !!opts.asNew || !currentEventId;
+    const id = asNew ? newEventId() : currentEventId;
+    let hist = asNew ? [] : currentHistory.slice();
+    const stage = submissionType === 'fire' ? $('submissionStage').value : '';
+    const ver = $('docVersion').value;
+    const last = hist.length ? hist[hist.length - 1] : null;
+    const action = opts.action || 'Saved';
+    if (!(action === 'Saved' && last && last.version === ver && last.stage === stage)) {
+      hist.push({ date: new Date().toISOString(), version: ver, stage, action });
+    } else {
+      last.date = new Date().toISOString();
+    }
+    const state = collectState();
+    const created = asNew ? new Date().toISOString() : (currentCreated || new Date().toISOString());
+    const region = submissionType === 'fire' ? $('fireRegion').value : submissionType === 'liquor' ? $('municipality').value : '';
+    const rec = {
+      id, name: $('eventName').value.trim() || 'Untitled event', clientName: $('clientName').value, venue: $('venue').value,
+      eventDate: $('eventDate').value, mode: submissionType, region, version: ver, created, updated: new Date().toISOString(),
+      docCount: documents.length, keepFiles: keep, history: hist.slice(-30), data: state,
+    };
+    const files = { id, docs: {}, logo: null };
+    if (keep) {
+      documents.forEach(d => { if (d.bytes) files.docs[d.id] = d.bytes; });
+      if (clientLogoBytes) files.logo = { bytes: clientLogoBytes, mime: clientLogoMime || 'image/png' };
+    }
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+    await dbPutBoth(rec, files);
+    currentEventId = id; currentHistory = rec.history; currentCreated = created;
+    await refreshEvents();
+    refreshEvStatus(opts.note || '');
+    return rec;
+  }
+
+  function showLogo(bytes, mime) {
+    clientLogoBytes = bytes; clientLogoMime = mime || 'image/png';
+    const img = $('clientLogoPreview');
+    if (bytes) {
+      img.src = URL.createObjectURL(new Blob([bytes], { type: clientLogoMime }));
+      img.style.display = 'inline-block';
+      $('clientLogoPlaceholder').style.display = 'none';
+    } else {
+      img.style.display = 'none'; img.removeAttribute('src');
+      $('clientLogoPlaceholder').style.display = '';
+    }
+  }
+
+  function applyEvent(rec, files) {
+    const s = rec.data;
+    setMode(s.mode);
+    Object.keys(s.fields || {}).forEach(id => { const el = $(id); if (el) el.value = s.fields[id]; });
+    lastAutoAddress = s.lastAutoAddress || '';
+    $('engineerField').style.display = (s.mode === 'fire' && $('fireRegion').value === 'Tshwane') ? 'flex' : 'none';
+    const fdocs = (files && files.docs) || {};
+    documents = (s.documents || []).map(d => {
+      const b = fdocs[d.id] || null;
+      return { id: d.id, file: null, fileName: d.fileName, size: d.size, bytes: b ? new Uint8Array(b) : null, sizeLabel: d.sizeLabel, tag: d.tag, a4Copy: d.a4Copy, sectionNumber: d.sectionNumber, sectionTitle: d.sectionTitle };
+    });
+    outstandingItems = (s.outstandingItems || []).map(i => Object.assign({}, i));
+    checklist = (s.checklist || []).map(c => Object.assign({}, c));
+    checklistDirty = !!s.checklistDirty;
+    checklistMode = s.mode;
+    nextId = documents.reduce((m, d) => Math.max(m, Number(d.id) || 0), 0) + 1;
+    nextItemId = outstandingItems.concat(checklist).reduce((m, i) => Math.max(m, Number(i.id) || 0), 0) + 1;
+    if (files && files.logo && files.logo.bytes) showLogo(new Uint8Array(files.logo.bytes), files.logo.mime); else showLogo(null);
+    $('evKeepFiles').checked = rec.keepFiles !== false;
+    if (s.mode === 'liquor' || s.mode === 'fire') renderRules();
+    renderItemList();
+    renderDocList();
+    currentEventId = rec.id; currentHistory = rec.history || []; currentCreated = rec.created;
+    statusMsg.style.display = 'none';
+    const missing = documents.filter(d => !d.bytes).length;
+    refreshEvStatus(missing ? '<span style="color:#B01415;font-weight:700;">' + missing + ' PDF(s) need re-attaching</span>' : '');
+  }
+
+  async function openEvent(id) {
+    if (!currentEventId && (documents.length || $('eventName').value.trim()) && !window.confirm('Opening a saved event replaces what is on screen, which has not been saved. Continue?')) return;
+    const res = await dbGetBoth(id);
+    if (!res[0]) { setEvStatus('That event could not be found.'); return; }
+    applyEvent(res[0], res[1]);
+    $('evPanel').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    renderEvList();
+  }
+
+  async function exportEvent(id) {
+    const res = await dbGetBoth(id);
+    if (!res[0]) return;
+    const rec = res[0], f = res[1] || { docs: {}, logo: null };
+    const docs = {};
+    Object.keys(f.docs || {}).forEach(k => { docs[k] = u8ToB64(new Uint8Array(f.docs[k])); });
+    const payload = { format: 'impi-binder-event', v: 1, exported: new Date().toISOString(), record: rec, files: { docs, logo: f.logo ? { mime: f.logo.mime, b64: u8ToB64(new Uint8Array(f.logo.bytes)) } : null } };
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = (rec.name || 'event').replace(/[^a-z0-9]+/gi, '_') + '_' + (rec.version || '') + '.impievent.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  async function importEventFile(file) {
+    try {
+      const p = JSON.parse(await file.text());
+      if (!p || p.format !== 'impi-binder-event' || !p.record) throw new Error('This is not an IMPI event file.');
+      const rec = p.record;
+      const existing = (await dbGetBoth(rec.id))[0];
+      if (existing && !window.confirm('An event with this ID is already saved here (' + existing.name + ', ' + existing.version + '). Replace it with the imported copy?')) return;
+      const files = { id: rec.id, docs: {}, logo: null };
+      Object.keys((p.files && p.files.docs) || {}).forEach(k => { files.docs[k] = b64ToU8(p.files.docs[k]); });
+      if (p.files && p.files.logo) files.logo = { mime: p.files.logo.mime, bytes: b64ToU8(p.files.logo.b64) };
+      await dbPutBoth(rec, files);
+      await refreshEvents();
+      $('evPanel').style.display = 'block';
+      setEvStatus('Imported <strong>' + escapeHtml(rec.name) + '</strong>. Open it from the list below.');
+    } catch (e) {
+      console.error(e);
+      setEvStatus('<span style="color:#B01415;font-weight:700;">Could not import: ' + escapeHtml(e.message) + '</span>');
+    }
+  }
+
+  function renderEvList() {
+    const q = $('evSearch').value.trim().toLowerCase();
+    const list = $('evList');
+    list.innerHTML = '';
+    const rows = evCache.filter(r => !q || [r.name, r.clientName, r.venue, r.region].join(' ').toLowerCase().includes(q))
+      .sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
+    $('evEmpty').style.display = rows.length ? 'none' : 'block';
+    $('evEmpty').textContent = evCache.length ? 'No saved events match your search.' : 'No saved events on this computer yet.';
+    rows.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'ev-row' + (r.id === currentEventId ? ' current' : '');
+      const histTxt = (r.history || []).slice(-3).reverse().map(h => escapeHtml(h.version + (h.stage ? ' (' + h.stage + ')' : '') + ' ' + h.action.toLowerCase() + ' ' + fmtDateTime(h.date))).join(' &nbsp;|&nbsp; ');
+      row.innerHTML = `
+        <div>
+          <div class="ev-title">${escapeHtml(r.name)}</div>
+          <div class="ev-meta">${escapeHtml(MODE_LABEL[r.mode] || r.mode)}${r.region ? ' &middot; ' + escapeHtml(r.region) : ''} &middot; ${escapeHtml(r.version || '')} &middot; ${r.docCount} document(s)${r.keepFiles === false ? ' (PDFs not kept)' : ''}${r.clientName ? ' &middot; ' + escapeHtml(r.clientName) : ''}</div>
+          <div class="ev-hist">${histTxt}</div>
+        </div>
+        <div class="ev-actions">
+          <button type="button" class="btn-small primary" data-act="open">Open</button>
+          <button type="button" class="btn-small" data-act="export">Export</button>
+          <button type="button" class="btn-small danger" data-act="del">${pendingDeleteId === r.id ? 'Confirm delete' : 'Delete'}</button>
+        </div>`;
+      row.querySelector('[data-act="open"]').addEventListener('click', () => openEvent(r.id));
+      row.querySelector('[data-act="export"]').addEventListener('click', () => exportEvent(r.id));
+      row.querySelector('[data-act="del"]').addEventListener('click', async () => {
+        if (pendingDeleteId !== r.id) { pendingDeleteId = r.id; renderEvList(); return; }
+        pendingDeleteId = null;
+        await dbDelBoth(r.id);
+        if (currentEventId === r.id) { currentEventId = null; currentHistory = []; currentCreated = null; }
+        await refreshEvents();
+        refreshEvStatus();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  async function refreshEvents() {
+    try { evCache = await dbAllEvents(); } catch (e) { evCache = []; }
+    $('evMyBtn').innerHTML = '&#128194; My events (' + evCache.length + ')';
+    renderEvList();
+  }
+
+  async function guardedSave(opts) {
+    try { await saveEvent(opts); }
+    catch (e) {
+      console.error(e);
+      setEvStatus('<span style="color:#B01415;font-weight:700;">Could not save: ' + escapeHtml(e.message || String(e)) + '</span> Try unticking "Keep the uploaded PDFs", or export an event file instead.');
+    }
+  }
+
+  $('evSaveBtn').addEventListener('click', () => guardedSave({ note: 'saved' }));
+  $('evSaveAsBtn').addEventListener('click', () => guardedSave({ asNew: true, note: 'saved as a new event' }));
+  $('evRevBtn').addEventListener('click', () => {
+    $('docVersion').value = bumpVersion($('docVersion').value);
+    guardedSave({ action: 'Revision', note: 'new revision started' });
+  });
+  $('evMyBtn').addEventListener('click', () => { const p = $('evPanel'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; if (p.style.display === 'block') refreshEvents(); });
+  $('evNewBtn').addEventListener('click', () => { if (window.confirm('Start a new, empty event? Anything not saved will be lost.')) location.reload(); });
+  $('evSearch').addEventListener('input', renderEvList);
+  $('evImportBtn').addEventListener('click', () => $('evImportInput').click());
+  $('evImportInput').addEventListener('change', (e) => { if (e.target.files[0]) importEventFile(e.target.files[0]); e.target.value = ''; });
+  refreshEvents();
 
   renderDocList();
   renderItemList();
