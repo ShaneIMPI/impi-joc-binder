@@ -119,7 +119,7 @@
   function groupDocuments(documents) {
     const groups = [];
     for (const docSpec of documents) {
-      const key = parseSectionKey(docSpec.sectionNumber);
+      const key = docSpec.groupKey || parseSectionKey(docSpec.sectionNumber);
       const last = groups[groups.length - 1];
       if (last && last.key === key) {
         last.items.push(docSpec);
@@ -170,7 +170,7 @@
 
   async function generateBinder(opts) {
     const {
-      submissionType = 'joc', // 'joc' | 'outstanding' | 'liquor'
+      submissionType = 'joc', // 'joc' | 'outstanding' | 'liquor' | 'fire'
       eventName = 'Untitled Event',
       clientName = '',
       venue = '',
@@ -179,7 +179,7 @@
       docVersion = 'V1.0',
       impiLogoBytes,
       clientLogoBytes = null,
-      documents = [], // [{ bytes, sectionNumber, title }]
+      documents: documentsIn = [], // [{ bytes, sectionNumber, title, tag, a4Copy }]
       onProgress = () => {},
       // Outstanding-submission-only fields (all optional, all ignored in 'joc' mode)
       jocReference = '',
@@ -195,12 +195,34 @@
       licenceType = '',
       applicationRef = '',
       checklistItems = [], // [{ itemText, sectionRef }]
+      // Fire / EMS floor plan submission fields
+      fireRegion = '',
+      fireAuthority = '',
+      submissionStage = '',
+      fireRef = '',
+      engineerName = '',
     } = opts;
 
     const isOutstanding = submissionType === 'outstanding';
     const isLiquor = submissionType === 'liquor';
+    const isFire = submissionType === 'fire';
     const hasLetter = isOutstanding || isLiquor;
-    const scheduleItems = isLiquor ? checklistItems : outstandingItems;
+    const hasSchedule = hasLetter || isFire;
+    const scheduleItems = (isLiquor || isFire) ? checklistItems : outstandingItems;
+    // Fire mode: add an auto-reduced A4 copy straight after any document flagged a4Copy.
+    const documents = [];
+    for (const d of documentsIn) {
+      documents.push(d);
+      if (isFire && d.a4Copy) {
+        documents.push({
+          bytes: d.bytes,
+          groupKey: parseSectionKey(d.sectionNumber),
+          sectionNumber: (d.sectionNumber || '') + '-A4',
+          title: (d.title || 'Document') + ' – A4 Reduced Copy',
+          reduceToA4: true,
+        });
+      }
+    }
     const todayStr = new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
     const effectiveSubmissionDate = submissionDate || todayStr;
 
@@ -217,6 +239,69 @@
     // Group documents into sections up front (e.g. 2a/2b/2c collapse into one
     // "Section 2") so the cover page's section count reflects reality, not just
     // the number of files uploaded.
+    // ---- Page-size helpers (fire mode handles A4, A3 and larger sheets, rotated or not) ----
+    const ISO = [['A0', 1189, 841], ['A1', 841, 594], ['A2', 594, 420], ['A3', 420, 297], ['A4', 297, 210], ['A5', 210, 148]];
+    function sizeLabelOfDims(wPt, hPt) {
+      const a = wPt * 25.4 / 72, b = hPt * 25.4 / 72;
+      const long = Math.max(a, b), short = Math.min(a, b);
+      for (const [name, L, S] of ISO) if (Math.abs(long - L) <= 6 && Math.abs(short - S) <= 6) return name;
+      return `${Math.round(long)} x ${Math.round(short)} mm`;
+    }
+    function visualDims(page) {
+      const mb = page.getMediaBox();
+      const r = ((page.getRotation().angle % 360) + 360) % 360;
+      const swap = r === 90 || r === 270;
+      return { w: swap ? mb.height : mb.width, h: swap ? mb.width : mb.height, r, mb };
+    }
+    function labelOfDoc(srcDoc) {
+      const labels = [];
+      for (const pg of srcDoc.getPages()) {
+        const v = visualDims(pg);
+        const l = sizeLabelOfDims(v.w, v.h);
+        if (!labels.includes(l)) labels.push(l);
+      }
+      return labels.join(' / ');
+    }
+    const loadedSources = new Map(); // docSpec -> PDFDocument (loaded once)
+    async function loadSource(docSpec, fallbackKey) {
+      if (loadedSources.has(docSpec)) return loadedSources.get(docSpec);
+      try {
+        const src = await PDFDocument.load(docSpec.bytes, { ignoreEncryption: true });
+        loadedSources.set(docSpec, src);
+        return src;
+      } catch (err) {
+        throw new Error(`Problem with "${docSpec.title || 'Untitled document'}" (Section ${docSpec.sectionNumber || fallbackKey}): this PDF could not be read. Open it, print or save it as a new PDF (or screenshot it and save as PDF), then replace it and try again. [${err.message}]`);
+      }
+    }
+    // Light page-number stamp placed at the visual bottom-right of the page,
+    // whatever its size or rotation, scaled up on large sheets.
+    function stampLight(page, text) {
+      const v = visualDims(page);
+      const size = 7 * Math.min(4, Math.max(1, Math.max(v.w, v.h) / 842));
+      const tw = helv.widthOfTextAtSize(text, size);
+      const pad = size * 1.4;
+      // visual position (bottom-right)
+      const vx = v.w - pad - tw, vy = pad * 0.9;
+      const mb = v.mb;
+      let x, y, rot = 0;
+      if (v.r === 0) { x = mb.x + vx; y = mb.y + vy; }
+      else if (v.r === 90) { x = mb.x + mb.width - vy; y = mb.y + vx; rot = 90; }
+      else if (v.r === 180) { x = mb.x + mb.width - vx; y = mb.y + mb.height - vy; rot = 180; }
+      else { x = mb.x + vy; y = mb.y + mb.height - vx; rot = 270; }
+      page.drawText(text, { x, y, size, font: helv, color: GREY, rotate: PDFLib.degrees(rot) });
+    }
+    // Pre-scan (fire mode): detect each document's sheet size for the index and checklist.
+    if (isFire) {
+      for (const d of documents) {
+        const src = await loadSource(d, '?');
+        const label = labelOfDoc(src);
+        d.sizeLabel = label;
+        let t = d.title || 'Untitled document';
+        if (d.tag && !t.toLowerCase().includes(String(d.tag).toLowerCase())) t += ' – ' + d.tag;
+        if (!d.reduceToA4 && label && label !== 'A4') t += ` (${label})`;
+        d.displayTitle = t;
+      }
+    }
     const groups = groupDocuments(documents);
 
     // ---------------- Cover page ----------------
@@ -240,8 +325,8 @@
     cover.drawRectangle({ x: 0, y: bandBottom, width: 14, height: bandH, color: RED });
     cover.drawRectangle({ x: 0, y: bandBottom - 4, width: PAGE_W, height: 4, color: GOLD });
 
-    const title = isLiquor ? 'LIQUOR LICENCE APPLICATION' : isOutstanding ? 'OUTSTANDING DOCUMENTATION SUBMISSION' : 'JOC PRESENTATION FILE';
-    const kicker = isLiquor ? 'LICENCE APPLICATION DOCUMENTATION' : isOutstanding ? 'RESPONSE TO OUTSTANDING ITEMS' : 'EVENT SAFETY & SECURITY DOCUMENTATION';
+    const title = isFire ? (fireRegion === 'Tshwane' ? 'EMS BLUE FILE SUBMISSION' : fireRegion === 'Ekurhuleni' ? 'EMS FLOOR PLAN SUBMISSION' : 'EMS SUBMISSION') : isLiquor ? 'LIQUOR LICENCE APPLICATION' : isOutstanding ? 'OUTSTANDING DOCUMENTATION SUBMISSION' : 'JOC PRESENTATION FILE';
+    const kicker = isFire ? `${(fireRegion || 'EMS').toUpperCase()} – FIRE & EMERGENCY SERVICES DOCUMENTATION` : isLiquor ? 'LICENCE APPLICATION DOCUMENTATION' : isOutstanding ? 'RESPONSE TO OUTSTANDING ITEMS' : 'EVENT SAFETY & SECURITY DOCUMENTATION';
     cover.drawText(kicker, { x: MARGIN, y: bandTop - 28, size: 8.5, font: helvB, color: GOLD });
     const titleSize = fitTitleSize(title, helvB, PAGE_W - 2 * MARGIN, 26, 15);
     cover.drawText(title, { x: MARGIN, y: bandTop - 62, size: titleSize, font: helvB, color: WHITE });
@@ -249,7 +334,17 @@
     cover.drawText(eventName, { x: MARGIN, y: bandTop - 98, size: evSize, font: helvB, color: GOLD });
 
     // ---- Detail grid (two columns) ----
-    const infoCells = isLiquor
+    const infoCells = isFire
+      ? [
+          ['CLIENT', clientName],
+          ['VENUE', venue],
+          ['EVENT DATE', eventDate],
+          ['SUBMITTED TO', fireAuthority],
+          ['SUBMISSION STAGE', submissionStage || 'First submission'],
+          ['REFERENCE', fireRef || 'N/A'],
+          ...(engineerName ? [['STRUCTURAL ENGINEER', engineerName]] : []),
+        ]
+      : isLiquor
       ? [
           ['APPLICANT / CLIENT', clientName],
           ['LICENCE TYPE', licenceType],
@@ -296,7 +391,7 @@
     cover.drawText('DOCUMENT CONTROL', { x: panelX + 20, y: panelY + panelH - 20, size: 9, font: helvB, color: DARK });
     const dcRows = [
       [['Prepared by', ellipsize(preparedBy, helv, 9, 140)], ['Version', docVersion]],
-      [['Date generated', todayStr], [hasLetter ? 'Documents submitted' : 'Total sections', hasLetter ? String(documents.length) : String(groups.length)]],
+      [['Date generated', todayStr], [hasSchedule ? 'Documents submitted' : 'Total sections', hasSchedule ? String(documents.filter((d) => !d.reduceToA4).length) : String(groups.length)]],
     ];
     dcRows.forEach((pair, r) => {
       pair.forEach(([label, value], c) => {
@@ -431,11 +526,11 @@
     }
 
     const schedRowsLayout = [];
-    if (hasLetter && scheduleItems.length) {
+    if (hasSchedule && scheduleItems.length) {
       scheduleItems.forEach((oi, idx) => {
         const matched = findMatchedDoc(oi.sectionRef);
         const itemLines = wrapText(oi.itemText || '(untitled item)', helv, 10, colItemW);
-        const docLabel = matched ? matched.title : (oi.sectionRef && oi.sectionRef.trim() ? `Not found: "${oi.sectionRef}"` : '—');
+        const docLabel = matched ? (matched.displayTitle || matched.title) : (oi.sectionRef && oi.sectionRef.trim() ? `Not found: "${oi.sectionRef}"` : '—');
         const docLines = wrapText(docLabel, helv, 10, colDocW);
         const lineCount = Math.max(itemLines.length, docLines.length, 1);
         const rowHeight = lineCount * schedLineH + schedRowPad;
@@ -486,19 +581,40 @@
       for (const docSpec of group.items) {
         onProgress({ stage: 'embedding', index: docCounter, total: documents.length, title: docSpec.title });
         docCounter++;
-        let srcDoc, copiedPages;
-        try {
-          srcDoc = await PDFDocument.load(docSpec.bytes, { ignoreEncryption: true });
-          copiedPages = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
-        } catch (err) {
-          throw new Error(`Problem with "${docSpec.title || 'Untitled document'}" (Section ${docSpec.sectionNumber || group.key}): this PDF could not be read. Open it, print or save it as a new PDF (or screenshot it and save as PDF), then replace it and try again. [${err.message}]`);
+        const srcDoc = await loadSource(docSpec, group.key);
+        let newPages = [];
+        if (docSpec.reduceToA4) {
+          // Build A4 pages that carry a reduced copy of every sheet of the source plan
+          for (const sp of srcDoc.getPages()) {
+            const v = visualDims(sp);
+            const emb = await outDoc.embedPage(sp);
+            const landscape = v.w > v.h;
+            const pw = landscape ? PAGE_H : PAGE_W, ph = landscape ? PAGE_W : PAGE_H;
+            const m = 18, labelH = 14;
+            const sc = Math.min((pw - 2 * m) / v.w, (ph - 2 * m - labelH) / v.h);
+            const dw = v.w * sc, dh = v.h * sc;
+            const ox = (pw - dw) / 2, oy = labelH + m / 2 + (ph - 2 * m - labelH - dh) / 2;
+            const pg = outDoc.addPage([pw, ph]);
+            const opts2 = { width: emb.width * sc, height: emb.height * sc };
+            if (v.r === 0) Object.assign(opts2, { x: ox, y: oy });
+            else if (v.r === 90) Object.assign(opts2, { x: ox, y: oy + emb.width * sc, rotate: PDFLib.degrees(-90) });
+            else if (v.r === 180) Object.assign(opts2, { x: ox + emb.width * sc, y: oy + emb.height * sc, rotate: PDFLib.degrees(-180) });
+            else Object.assign(opts2, { x: ox + emb.height * sc, y: oy, rotate: PDFLib.degrees(90) });
+            pg.drawPage(emb, opts2);
+            pg.drawRectangle({ x: ox, y: oy, width: dw, height: dh, borderColor: BAR_GREY, borderWidth: 0.5 });
+            const note = `A4 reduced copy  |  original sheet size ${sizeLabelOfDims(v.w, v.h)}, reduced to ${Math.round(sc * 100)}%  |  not to scale`;
+            pg.drawText(note, { x: (pw - helv.widthOfTextAtSize(note, 7)) / 2, y: m / 2 + 2, size: 7, font: helv, color: GREY });
+            newPages.push(pg);
+          }
+        } else {
+          newPages = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+          newPages.forEach((p) => outDoc.addPage(p));
         }
-        copiedPages.forEach((p) => outDoc.addPage(p));
         items.push({
           sectionNumber: docSpec.sectionNumber || group.key,
-          title: docSpec.title || 'Untitled document',
-          firstContentPage: copiedPages[0] || divider,
-          pageCount: copiedPages.length,
+          title: docSpec.displayTitle || docSpec.title || 'Untitled document',
+          firstContentPage: newPages[0] || divider,
+          pageCount: newPages.length,
         });
       }
       sectionPlan.push({
@@ -527,9 +643,9 @@
     // ---------------- Draw Schedule / Checklist content ----------------
     // (deferred until now because the "Page" column needs pageNumberOf, which only
     // exists once every content page has been embedded)
-    const schedHeading = isLiquor ? 'APPLICATION DOCUMENT CHECKLIST' : 'SCHEDULE OF OUTSTANDING ITEMS';
-    const schedKicker = isLiquor ? (licensingAuthority ? licensingAuthority.toUpperCase() : 'LIQUOR LICENCE APPLICATION') : 'RESPONSE TO OUTSTANDING ITEMS';
-    const colItemLabel = isLiquor ? 'REQUIREMENT' : 'ITEM REQUESTED';
+    const schedHeading = isFire ? 'SUBMISSION CHECKLIST' : isLiquor ? 'APPLICATION DOCUMENT CHECKLIST' : 'SCHEDULE OF OUTSTANDING ITEMS';
+    const schedKicker = isFire ? (fireAuthority ? fireAuthority.toUpperCase() : 'EMS SUBMISSION') : isLiquor ? (licensingAuthority ? licensingAuthority.toUpperCase() : 'LIQUOR LICENCE APPLICATION') : 'RESPONSE TO OUTSTANDING ITEMS';
+    const colItemLabel = (isLiquor || isFire) ? 'REQUIREMENT' : 'ITEM REQUESTED';
     schedPagesRowGroups.forEach((rowsOnPage, pageIdx) => {
       const sp = schedulePages[pageIdx];
       drawPageHeader(sp, impiLogo, helvB, schedHeading, schedKicker);
@@ -710,11 +826,7 @@
         page.drawText(pn, { x: PAGE_W - MARGIN - pnW, y: 18, size: 8, font: helv, color: DARK });
       } else {
         // light-touch stamp only, so we don't visually alter client/official source documents
-        const pn = `${pageNum} / ${totalPages}`;
-        const size = 7;
-        const pnW = helv.widthOfTextAtSize(pn, size);
-        page.drawRectangle({ x: PAGE_W - 14 - pnW, y: 10, width: pnW + 8, height: 12, color: WHITE, opacity: 0.6 });
-        page.drawText(pn, { x: PAGE_W - 10 - pnW, y: 13, size, font: helv, color: GREY });
+        stampLight(page, `${pageNum} / ${totalPages}`);
       }
     });
 
@@ -734,9 +846,9 @@
         });
         topRefs.push(context.register(letterDict));
       }
-      if (hasLetter && schedulePages.length) {
+      if (hasSchedule && schedulePages.length) {
         const schedDict = context.obj({
-          Title: PDFLib.PDFString.of(isLiquor ? 'Application Document Checklist' : 'Schedule of Outstanding Items'),
+          Title: PDFLib.PDFString.of(isFire ? 'Submission Checklist' : isLiquor ? 'Application Document Checklist' : 'Schedule of Outstanding Items'),
           Dest: [schedulePages[0].ref, PDFName.of('XYZ'), null, null, null],
         });
         topRefs.push(context.register(schedDict));
