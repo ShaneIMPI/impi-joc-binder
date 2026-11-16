@@ -298,7 +298,7 @@
         d.sizeLabel = label;
         let t = d.title || 'Untitled document';
         if (d.tag && !t.toLowerCase().includes(String(d.tag).toLowerCase())) t += ' – ' + d.tag;
-        if (!d.reduceToA4 && label && label !== 'A4') t += ` (${label})`;
+        if (!d.reduceToA4 && label && /\bA[0-3]\b/.test(label)) t += ` (${label})`;
         d.displayTitle = t;
       }
     }
