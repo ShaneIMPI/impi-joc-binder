@@ -195,6 +195,9 @@
       licenceType = '',
       applicationRef = '',
       checklistItems = [], // [{ itemText, sectionRef }]
+      checklistHeading = '',
+      checklistKicker = '',
+      checklistNote = '',
       // Fire / EMS floor plan submission fields
       fireRegion = '',
       fireAuthority = '',
@@ -469,7 +472,7 @@
         const refSuffixL = applicationRef ? ` (REF: ${applicationRef.toUpperCase()})` : '';
         reLine = `RE: APPLICATION FOR ${licenceType ? licenceType.toUpperCase() + ' ' : ''}LIQUOR LICENCE – ${eventName.toUpperCase()}${refSuffixL}`;
         para1 = `We, IMPI RMS (Pty) Ltd, hereby submit on behalf of ${clientName || 'the applicant'} an application for a ${licenceType ? licenceType + ' ' : ''}liquor licence in respect of ${venue || 'the above-mentioned premises'}${municipality ? ', situated within the ' + municipality : ''}${eventDate ? `, for the event taking place on ${eventDate}` : ''}.`;
-        para2 = `The supporting documentation is enclosed and is listed in the accompanying Application Document Checklist, with each requirement cross-referenced to the relevant section and page of this file. Should any further information or clarification be required, please do not hesitate to contact the undersigned.`;
+        para2 = `The supporting documentation is enclosed and is listed in the accompanying ${checklistHeading ? 'Checklist for Section 31 Applications' : 'Application Document Checklist'}, with each requirement cross-referenced to the relevant section and page of this file. Should any further information or clarification be required, please do not hesitate to contact the undersigned.`;
         para3 = `We trust that the application is in order, and respectfully request that it be processed in accordance with the applicable legislation${licensingAuthority ? ' and the requirements of the ' + licensingAuthority : ''}.`;
       } else {
         const refSuffix = jocReference ? ` (JOC REF: ${jocReference.toUpperCase()})` : '';
@@ -643,8 +646,8 @@
     // ---------------- Draw Schedule / Checklist content ----------------
     // (deferred until now because the "Page" column needs pageNumberOf, which only
     // exists once every content page has been embedded)
-    const schedHeading = isFire ? 'SUBMISSION CHECKLIST' : isLiquor ? 'APPLICATION DOCUMENT CHECKLIST' : 'SCHEDULE OF OUTSTANDING ITEMS';
-    const schedKicker = isFire ? (fireAuthority ? fireAuthority.toUpperCase() : 'EMS SUBMISSION') : isLiquor ? (licensingAuthority ? licensingAuthority.toUpperCase() : 'LIQUOR LICENCE APPLICATION') : 'RESPONSE TO OUTSTANDING ITEMS';
+    const schedHeading = isFire ? 'SUBMISSION CHECKLIST' : isLiquor ? (checklistHeading || 'APPLICATION DOCUMENT CHECKLIST') : 'SCHEDULE OF OUTSTANDING ITEMS';
+    const schedKicker = isFire ? (fireAuthority ? fireAuthority.toUpperCase() : 'EMS SUBMISSION') : isLiquor ? (checklistKicker || (licensingAuthority ? licensingAuthority.toUpperCase() : 'LIQUOR LICENCE APPLICATION')) : 'RESPONSE TO OUTSTANDING ITEMS';
     const colItemLabel = (isLiquor || isFire) ? 'REQUIREMENT' : 'ITEM REQUESTED';
     schedPagesRowGroups.forEach((rowsOnPage, pageIdx) => {
       const sp = schedulePages[pageIdx];
@@ -680,6 +683,13 @@
         }
         ly -= row.rowHeight;
       });
+      if (checklistNote && pageIdx === schedPagesRowGroups.length - 1) {
+        const words = checklistNote.split(' '); const lines = []; let cur = '';
+        for (const w of words) { const t = cur ? cur + ' ' + w : w; if (helv.widthOfTextAtSize(t, 8.5) > PAGE_W - 2 * MARGIN - 16) { lines.push(cur); cur = w; } else cur = t; }
+        if (cur) lines.push(cur);
+        let ny = ly - 16;
+        lines.forEach((ln, i) => sp.drawText(ln, { x: MARGIN + 8, y: ny - i * 11.5, size: 8.5, font: helv, color: GREY }));
+      }
     });
 
     // ---------------- Draw TOC content ----------------
