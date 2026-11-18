@@ -598,16 +598,19 @@
     gauteng: {
       verified: true,
       items: [
-        'Form 1, fully completed and commissioned',
-        'Proof of Lawful Occupation (PLO) of the premises (lease agreement / title deed) and / or consent to use, if applicable (section 49)',
-        'Detailed written motivation in support of the application',
-        'Detailed sketch plan of the premises of the venue where the event is taking place',
-        'Certified copies of the identity document(s) of the applicant',
-        'Proof of payment of the prescribed fee (paid at Standard Bank)',
-        'Power of attorney (if applicable)',
-        'Close Corporation: CK form and resolution, if constituted by more than one member (section 49, if applicable)',
+        'Form 1 fully completed and commissioned',
+        'PLO - Proof of Lawful Occupation of the premises (Lease agreement/Title Deed) and or consent use if applicable - Sec. 49',
+        'A detailed written motivation in support of the application',
+        'A detailed sketch plan of the premises of the venue where the event is taking place',
+        'ID - Certified copies of identity document/s of applicant',
+        'Proof of payment of the prescribed fee paid at Standard Bank',
+        'Power of attorney (If applicable)',
+        'CC - Close Corporation - CK form and Resolution if it\'s constituted by more than one (1) member - Sec. 49 (if applicable)',
       ],
-      rules: 'Gauteng Liquor Board: all documents listed (where applicable) are mandatory when you lodge, and the application must be lodged in duplicate (original and copy) at the regional office. Guidance sites also report lodging at least 14 days before the event, but this is not on the official checklist, so confirm the timeline with the regional office.',
+      heading: 'CHECKLIST FOR SECTION 31 APPLICATIONS',
+      kicker: 'GAUTENG LIQUOR BOARD - GAUTENG LIQUOR ACT, 2 OF 2003',
+      note: 'All liquor applications must be accompanied by all the necessary documents. All documents listed (where applicable) are mandatory when you lodge. Applications must be lodged in duplicate (original and copy) at the regional office.',
+      rules: 'Gauteng Liquor Board: all liquor applications must be accompanied by all the necessary documents; all documents listed (where applicable) are mandatory when you lodge; and applications must be lodged in duplicate (original and copy) at the regional office. Items 1 to 8 are worded exactly as on the board checklist. Municipal JOC requirements are not part of this checklist, so use the JOC Presentation File for those. Guidance sites also report lodging at least 14 days before the event, but this is not on the official checklist, so confirm the timeline with the regional office.',
       source: 'Gauteng Liquor Board "Checklist for Section 31 Applications" (Gauteng Liquor Act 2 of 2003), as displayed at the board and supplied on 13 Nov 2026. The checklist is applied here to the Special Event / Temporary type.',
     },
     wc: {
@@ -718,7 +721,8 @@
 
   function buildSuggestedChecklist() {
     const info = currentListInfo();
-    const texts = submissionType === 'fire' ? [...info.items] : [...info.items, ...(info.m ? info.m.extras : []), ...SUPPORTING_DOCS];
+    const boardList = !!info.heading; // official board checklist: no municipal extras mixed in
+    const texts = submissionType === 'fire' ? [...info.items] : [...info.items, ...((info.m && !boardList) ? info.m.extras : []), ...SUPPORTING_DOCS];
     const optional = /\((venue-dependent|if applicable|if requested|if invoiced)/i;
     // Fire / EMS: venue-dependent items (e.g. the occupancy certificate) start excluded;
     // tick the box on the row to include them for venues that require them.
@@ -1155,6 +1159,9 @@
           municipality: muni ? muni.municipality : $('municipality').value,
           licensingAuthority: $('licensingAuthority').value,
           licenceType: $('licenceType').value,
+          checklistHeading: currentListInfo().heading || '',
+          checklistKicker: currentListInfo().kicker || '',
+          checklistNote: currentListInfo().note || '',
           applicationRef: $('applicationRef').value,
           addressedTo: $('liqAddressedTo').value,
           submissionDate: $('liqSubmissionDate').value,
